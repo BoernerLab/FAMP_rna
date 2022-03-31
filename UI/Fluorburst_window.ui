@@ -1,0 +1,1486 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Main</class>
+ <widget class="QDialog" name="Main">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1006</width>
+    <height>756</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Fluorburst</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background-color: rgb(255, 255, 255)</string>
+  </property>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>20</y>
+     <width>175</width>
+     <height>33</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>18</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Fluorburst GUI</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="b_load_xtc_pdb">
+   <property name="geometry">
+    <rect>
+     <x>210</x>
+     <y>20</y>
+     <width>101</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton{
+
+	background-color: '#ffffff';
+	border-radius: 6px;
+	border: 2px solid '#000000';
+}
+
+QPushButton:hover{
+	
+	background-color: '#ffe278';
+}
+
+
+
+</string>
+   </property>
+   <property name="text">
+    <string>Add MD run</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_20">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>71</y>
+     <width>137</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Calculate Burts of:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="comboBox_2">
+   <property name="geometry">
+    <rect>
+     <x>178</x>
+     <y>71</y>
+     <width>141</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
+   <property name="editable">
+    <bool>false</bool>
+   </property>
+   <property name="currentText">
+    <string/>
+   </property>
+   <property name="currentIndex">
+    <number>-1</number>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="b_load_experiment">
+   <property name="geometry">
+    <rect>
+     <x>347</x>
+     <y>67</y>
+     <width>161</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton{
+
+	background-color: '#ffffff';
+	border-radius: 6px;
+	border: 2px solid '#000000';
+}
+
+QPushButton:hover{
+	
+	background-color: '#ffe278';
+}
+</string>
+   </property>
+   <property name="text">
+    <string>add experimental Data</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>107</y>
+     <width>62</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>17</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Dyes:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_7">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>107</y>
+     <width>61</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>17</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>FRET:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_16">
+   <property name="geometry">
+    <rect>
+     <x>476</x>
+     <y>107</y>
+     <width>79</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>17</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Bursts:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_19">
+   <property name="geometry">
+    <rect>
+     <x>715</x>
+     <y>107</y>
+     <width>114</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>17</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Sampling:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_3">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>156</y>
+     <width>41</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>tauD:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="i_taud">
+   <property name="geometry">
+    <rect>
+     <x>57</x>
+     <y>156</y>
+     <width>110</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit{
+
+	background-color: rgb(255, 255, 255);
+	border-radius: 6px;
+	border: 2px solid  rgb(208, 208, 208);
+	
+}
+
+QLineEdit:hover{
+	
+	border: 3px solid rgb(158, 158, 158);
+}
+
+QLineEdit:focus{
+
+	border: 2px solid rgb(200, 177, 0)
+}
+
+
+</string>
+   </property>
+   <property name="text">
+    <string>1.4</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_10">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>156</y>
+     <width>105</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>R0 (Angstöm):</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="I_r0">
+   <property name="geometry">
+    <rect>
+     <x>333</x>
+     <y>156</y>
+     <width>110</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit{
+
+	background-color: rgb(255, 255, 255);
+	border-radius: 6px;
+	border: 2px solid  rgb(208, 208, 208);
+	
+}
+
+QLineEdit:hover{
+	
+	border: 3px solid rgb(158, 158, 158);
+}
+
+QLineEdit:focus{
+
+	border: 2px solid rgb(200, 177, 0)
+}
+</string>
+   </property>
+   <property name="text">
+    <string>5.4</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_14">
+   <property name="geometry">
+    <rect>
+     <x>476</x>
+     <y>156</y>
+     <width>83</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>lower limit:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="i_llimit">
+   <property name="geometry">
+    <rect>
+     <x>572</x>
+     <y>156</y>
+     <width>110</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit{
+
+	background-color: rgb(255, 255, 255);
+	border-radius: 6px;
+	border: 2px solid  rgb(208, 208, 208);
+	
+}
+
+QLineEdit:hover{
+	
+	border: 3px solid rgb(158, 158, 158);
+}
+
+QLineEdit:focus{
+
+	border: 2px solid rgb(200, 177, 0)
+}
+</string>
+   </property>
+   <property name="text">
+    <string>40</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_22">
+   <property name="geometry">
+    <rect>
+     <x>715</x>
+     <y>156</y>
+     <width>53</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>bursts:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="i_bursts">
+   <property name="geometry">
+    <rect>
+     <x>852</x>
+     <y>156</y>
+     <width>110</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit{
+
+	background-color: rgb(255, 255, 255);
+	border-radius: 6px;
+	border: 2px solid  rgb(208, 208, 208);
+	
+}
+
+QLineEdit:hover{
+	
+	border: 3px solid rgb(158, 158, 158);
+}
+
+QLineEdit:focus{
+
+	border: 2px solid rgb(200, 177, 0)
+}
+</string>
+   </property>
+   <property name="text">
+    <string>1000</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_4">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>184</y>
+     <width>39</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>tauA:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="i_tauA">
+   <property name="geometry">
+    <rect>
+     <x>57</x>
+     <y>184</y>
+     <width>110</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit{
+
+	background-color: rgb(255, 255, 255);
+	border-radius: 6px;
+	border: 2px solid  rgb(208, 208, 208);
+	
+}
+
+QLineEdit:hover{
+	
+	border: 3px solid rgb(158, 158, 158);
+}
+
+QLineEdit:focus{
+
+	border: 2px solid rgb(200, 177, 0)
+}
+</string>
+   </property>
+   <property name="text">
+    <string>1.0</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_11">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>184</y>
+     <width>18</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>𝜅2</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="i_kappa">
+   <property name="geometry">
+    <rect>
+     <x>333</x>
+     <y>184</y>
+     <width>110</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit{
+
+	background-color: rgb(255, 255, 255);
+	border-radius: 6px;
+	border: 2px solid  rgb(208, 208, 208);
+	
+}
+
+QLineEdit:hover{
+	
+	border: 3px solid rgb(158, 158, 158);
+}
+
+QLineEdit:focus{
+
+	border: 2px solid rgb(200, 177, 0)
+}
+</string>
+   </property>
+   <property name="text">
+    <string>0.6666</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_15">
+   <property name="geometry">
+    <rect>
+     <x>476</x>
+     <y>184</y>
+     <width>87</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>upper limit:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="i_ulimit">
+   <property name="geometry">
+    <rect>
+     <x>572</x>
+     <y>184</y>
+     <width>110</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit{
+
+	background-color: rgb(255, 255, 255);
+	border-radius: 6px;
+	border: 2px solid  rgb(208, 208, 208);
+	
+}
+
+QLineEdit:hover{
+	
+	border: 3px solid rgb(158, 158, 158);
+}
+
+QLineEdit:focus{
+
+	border: 2px solid rgb(200, 177, 0)
+}
+</string>
+   </property>
+   <property name="text">
+    <string>120</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_21">
+   <property name="geometry">
+    <rect>
+     <x>715</x>
+     <y>184</y>
+     <width>131</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>skip frames start:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="i_sfstart">
+   <property name="geometry">
+    <rect>
+     <x>852</x>
+     <y>184</y>
+     <width>110</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit{
+
+	background-color: rgb(255, 255, 255);
+	border-radius: 6px;
+	border: 2px solid  rgb(208, 208, 208);
+	
+}
+
+QLineEdit:hover{
+	
+	border: 3px solid rgb(158, 158, 158);
+}
+
+QLineEdit:focus{
+
+	border: 2px solid rgb(200, 177, 0)
+}
+</string>
+   </property>
+   <property name="text">
+    <string>0</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_5">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>212</y>
+     <width>28</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>QD:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="i_qd">
+   <property name="geometry">
+    <rect>
+     <x>57</x>
+     <y>212</y>
+     <width>110</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit{
+
+	background-color: rgb(255, 255, 255);
+	border-radius: 6px;
+	border: 2px solid  rgb(208, 208, 208);
+	
+}
+
+QLineEdit:hover{
+	
+	border: 3px solid rgb(158, 158, 158);
+}
+
+QLineEdit:focus{
+
+	border: 2px solid rgb(200, 177, 0)
+}
+</string>
+   </property>
+   <property name="text">
+    <string>0.2</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_9">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>212</y>
+     <width>127</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>quenchin radius:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="i_quench">
+   <property name="geometry">
+    <rect>
+     <x>333</x>
+     <y>212</y>
+     <width>110</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit{
+
+	background-color: rgb(255, 255, 255);
+	border-radius: 6px;
+	border: 2px solid  rgb(208, 208, 208);
+	
+}
+
+QLineEdit:hover{
+	
+	border: 3px solid rgb(158, 158, 158);
+}
+
+QLineEdit:focus{
+
+	border: 2px solid rgb(200, 177, 0)
+}
+</string>
+   </property>
+   <property name="text">
+    <string>1.0</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_13">
+   <property name="geometry">
+    <rect>
+     <x>476</x>
+     <y>212</y>
+     <width>61</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>lambda:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="i_lambda">
+   <property name="geometry">
+    <rect>
+     <x>572</x>
+     <y>212</y>
+     <width>110</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit{
+
+	background-color: rgb(255, 255, 255);
+	border-radius: 6px;
+	border: 2px solid  rgb(208, 208, 208);
+	
+}
+
+QLineEdit:hover{
+	
+	border: 3px solid rgb(158, 158, 158);
+}
+
+QLineEdit:focus{
+
+	border: 2px solid rgb(200, 177, 0)
+}
+</string>
+   </property>
+   <property name="text">
+    <string>-2.3</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_18">
+   <property name="geometry">
+    <rect>
+     <x>715</x>
+     <y>212</y>
+     <width>124</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>skip frames end:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="i_sfend">
+   <property name="geometry">
+    <rect>
+     <x>852</x>
+     <y>212</y>
+     <width>110</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit{
+
+	background-color: rgb(255, 255, 255);
+	border-radius: 6px;
+	border: 2px solid  rgb(208, 208, 208);
+	
+}
+
+QLineEdit:hover{
+	
+	border: 3px solid rgb(158, 158, 158);
+}
+
+QLineEdit:focus{
+
+	border: 2px solid rgb(200, 177, 0)
+}
+</string>
+   </property>
+   <property name="text">
+    <string>0</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_6">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>240</y>
+     <width>26</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>QA:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="i_qa">
+   <property name="geometry">
+    <rect>
+     <x>57</x>
+     <y>242</y>
+     <width>110</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit{
+
+	background-color: rgb(255, 255, 255);
+	border-radius: 6px;
+	border: 2px solid  rgb(208, 208, 208);
+	
+}
+
+QLineEdit:hover{
+	
+	border: 3px solid rgb(158, 158, 158);
+}
+
+QLineEdit:focus{
+
+	border: 2px solid rgb(200, 177, 0)
+}
+</string>
+   </property>
+   <property name="text">
+    <string>0.3</string>
+   </property>
+  </widget>
+  <widget class="QRadioButton" name="r_gamma">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>240</y>
+     <width>163</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QRadioButton::indicator {
+    width:                  13px;
+    height:                 13px;
+    border-radius:         8px;
+	border-collapse: separate;
+	border-spacing: 1px;
+}
+
+QRadioButton::indicator:checked {
+    background-color:        '#ffe278';
+    border:                 2px solid black;
+}
+
+QRadioButton::indicator:unchecked {
+    background-color:       white;
+    border:                 2px solid black;
+}</string>
+   </property>
+   <property name="text">
+    <string>gamma correction</string>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="b_calculate">
+   <property name="geometry">
+    <rect>
+     <x>476</x>
+     <y>241</y>
+     <width>111</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton{
+
+	background-color: '#ffffff';
+	border-radius: 6px;
+	border: 2px solid '#000000';
+}
+
+QPushButton:hover{
+	
+	background-color: '#ffe278';
+}
+</string>
+   </property>
+   <property name="text">
+    <string>Calculate Bursts</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="b_import_params">
+   <property name="geometry">
+    <rect>
+     <x>720</x>
+     <y>240</y>
+     <width>111</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton{
+
+	background-color: '#ffffff';
+	border-radius: 6px;
+	border: 2px solid '#000000';
+}
+
+QPushButton:hover{
+	
+	background-color: '#ffe278';
+}
+</string>
+   </property>
+   <property name="text">
+    <string>import params</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="b_exprot_params">
+   <property name="geometry">
+    <rect>
+     <x>850</x>
+     <y>240</y>
+     <width>111</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton{
+
+	background-color: '#ffffff';
+	border-radius: 6px;
+	border: 2px solid '#000000';
+}
+
+QPushButton:hover{
+	
+	background-color: '#ffe278';
+}
+</string>
+   </property>
+   <property name="text">
+    <string>export params</string>
+   </property>
+  </widget>
+  <widget class="Line" name="line">
+   <property name="geometry">
+    <rect>
+     <x>9</x>
+     <y>290</y>
+     <width>988</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_12">
+   <property name="geometry">
+    <rect>
+     <x>9</x>
+     <y>416</y>
+     <width>91</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Plot data of:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="comboBox">
+   <property name="geometry">
+    <rect>
+     <x>9</x>
+     <y>444</y>
+     <width>151</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+    </font>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_17">
+   <property name="geometry">
+    <rect>
+     <x>9</x>
+     <y>566</y>
+     <width>36</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>bins:</string>
+   </property>
+   <property name="textFormat">
+    <enum>Qt::AutoText</enum>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="bins">
+   <property name="geometry">
+    <rect>
+     <x>56</x>
+     <y>566</y>
+     <width>61</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Open Sans</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit{
+
+	background-color: rgb(255, 255, 255);
+	border-radius: 6px;
+	border: 2px solid  rgb(208, 208, 208);
+	
+}
+
+QLineEdit:hover{
+	
+	border: 3px solid rgb(158, 158, 158);
+}
+
+QLineEdit:focus{
+
+	border: 2px solid rgb(200, 177, 0)
+}
+
+
+</string>
+   </property>
+   <property name="text">
+    <string>30</string>
+   </property>
+  </widget>
+  <widget class="QWidget" name="ffvis" native="true">
+   <property name="geometry">
+    <rect>
+     <x>285</x>
+     <y>348</y>
+     <width>561</width>
+     <height>371</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QWidget{
+
+	border: 2px solid black;
+	border-radius: 15px
+}</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="b_FRET">
+   <property name="geometry">
+    <rect>
+     <x>305</x>
+     <y>320</y>
+     <width>75</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton{
+
+	background-color: '#ffffff';
+	border-top-left-radius: 6px;
+	border-left: 2px solid '#000000';
+	border-right: 2px solid '#000000';
+	border-top: 2px solid '#000000';
+}
+
+QPushButton:hover{
+	
+	background-color: '#ffe278';
+}
+
+</string>
+   </property>
+   <property name="text">
+    <string>FRET</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="b_kappa2">
+   <property name="geometry">
+    <rect>
+     <x>380</x>
+     <y>320</y>
+     <width>75</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton{
+
+	background-color: '#ffffff';
+	border-right: 2px solid '#000000';
+	border-top: 2px solid '#000000';
+}
+
+QPushButton:hover{
+	
+	background-color: '#ffe278';
+}
+
+</string>
+   </property>
+   <property name="text">
+    <string>kappa</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="b_rda">
+   <property name="geometry">
+    <rect>
+     <x>455</x>
+     <y>320</y>
+     <width>75</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton{
+
+	background-color: '#ffffff';
+	border-right: 2px solid '#000000';
+	border-top: 2px solid '#000000';
+}
+
+QPushButton:hover{
+	
+	background-color: '#ffe278';
+}
+</string>
+   </property>
+   <property name="text">
+    <string>RDA</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="r_ap">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>320</y>
+     <width>75</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton{
+
+	background-color: '#ffffff';
+	border-top-right-radius: 6px;
+	border-right: 2px solid '#000000';
+	border-top: 2px solid '#000000';
+}
+
+QPushButton:hover{
+	
+	background-color: '#ffe278';
+}
+</string>
+   </property>
+   <property name="text">
+    <string>RAP</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
