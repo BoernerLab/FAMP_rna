@@ -20,6 +20,19 @@ from PyQt5.uic import loadUi
 from Fluorburst_Designed import Ui_Main
 
 
+def burst_fit(E_FRET, bins_i):
+    hist, bins = np.histogram(E_FRET, bins=bins_i, range=(0, 1), weights=np.ones(len(E_FRET)) / len(E_FRET))
+    bincenters = binMid = (bins[1:] + bins[:-1]) / 2
+
+    mod = lmfit.models.GaussianModel()
+    pars = mod.guess(hist, x=bincenters)
+    out = mod.fit(hist, pars, x=bincenters)
+    x_fit = np.linspace(0, 1, 100)
+    y_fit = mod.func(x_fit, *list(out.params.valuesdict().values())[:3])
+
+    return x_fit, y_fit
+
+
 class Window(QMainWindow, Ui_Main):
 
     def __init__(self, parent=None):
@@ -56,40 +69,6 @@ class Window(QMainWindow, Ui_Main):
                 QApplication.processEvents()
 
                 traj = md.load(self.xtc_filename, top=self.pdb_file_name)
-
-                self.trajectory_list[self.xtc_filename] = traj
-                traj_df = traj.top.to_dataframe()[0]
-
-                # TODO Die Farbstoffe sollten über die GUI Spezifiziert werden zumindest Farbstoff und die Residue Nummer --> Dipolatome sollten für Farbstoffe vordefiniert werden
-                D14 = traj_df.iloc[traj_df[((traj_df['name'] == 'C14') & (
-                        traj_df['resName'] == 'C3W'))].index.values[0]]['serial']
-                D2 = traj_df.iloc[traj_df[((traj_df['name'] == 'C2') & (
-                        traj_df['resName'] == 'C3W'))].index.values[0]]['serial']
-                A14 = traj_df.iloc[traj_df[((traj_df['name'] == 'C14') & (
-                        traj_df['resName'] == 'C5W'))].index.values[0]]['serial']
-                A2 = traj_df.iloc[traj_df[((traj_df['name'] == 'C2') & (
-                        traj_df['resName'] == 'C5W'))].index.values[0]]['serial']
-                MD = traj_df.iloc[traj_df[((traj_df['name'] == 'C11') & (
-                        traj_df['resName'] == 'C3W'))].index.values[0]]['serial']
-                MA = traj_df.iloc[traj_df[((traj_df['name'] == 'C32') & (
-                        traj_df['resName'] == 'C5W'))].index.values[0]]['serial']
-                print('Check3')
-                donor = [traj.xyz[:, D14], traj.xyz[:, D2]]
-                acceptor = [traj.xyz[:, A14], traj.xyz[:, A2]]
-                mean_donor = traj.xyz[:, MD]
-                mean_acceptor = traj.xyz[:, MA]
-                print('Check4')
-                kappa2 = self.calculate_kappa2(donor, acceptor)
-                R_DA = self.calculate_inter_dye_distance(mean_donor, mean_acceptor)
-                time = np.arange(0, 1000010, 10)
-
-                print(len(kappa2), len(R_DA), len(time))
-
-                df = pd.DataFrame(list(zip(time, R_DA, kappa2)))
-                print("Check1")
-                df.to_csv('Data/rkappa.dat', sep='\t', header=False, index=False)
-                print("Check 2")
-
 
     """
     def clicked_pdb(self):
@@ -191,18 +170,6 @@ class Window(QMainWindow, Ui_Main):
         sns.set_style('ticks', {'xtick.major.size': x_size, 'ytick.major.size': y_size, 'xtick.direction': x_dir,
                                 'ytick.direction': y_dir})
 
-    def burst_fit(self, E_FRET, bins_i):
-        hist, bins = np.histogram(E_FRET, bins=bins_i, range=(0, 1), weights=np.ones(len(E_FRET)) / len(E_FRET))
-        bincenters = binMid = (bins[1:] + bins[:-1]) / 2
-
-        mod = lmfit.models.GaussianModel()
-        pars = mod.guess(hist, x=bincenters)
-        out = mod.fit(hist, pars, x=bincenters)
-        x_fit = np.linspace(0, 1, 100)
-        y_fit = mod.func(x_fit, *list(out.params.valuesdict().values())[:3])
-
-        return x_fit, y_fit
-
     def print_pars(self):
         self.parameters = {
             "dyes": {
@@ -277,13 +244,12 @@ class Window(QMainWindow, Ui_Main):
 
         self.r_ap.setStyleSheet(f"QPushButton{{ background-color: {r_ap_bg}; border-top-right-radius: 6px;border-right: 2px solid #000000;border-top: 2px solid #000000;}} QPushButton:hover{{background-color: #ffe278;}}")
 
-
     def vis_exp_md_acv(self):
         print("öhm")
         self.clicked = "FRET"
         self.change_button_style()
         # md_e = self.experiment_fd
-        md_fit_x = self.burst_fit(self.experiment, 30)
+        md_fit_x = burst_fit(self.experiment, 30)
         with sns.axes_style('ticks'):
             self.set_ticksStyle()
             self.figure.clear()
@@ -337,7 +303,14 @@ class Window(QMainWindow, Ui_Main):
         self.change_button_style()
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    win = Window()
-    win.show()
-    sys.exit(app.exec())
+    #app = QApplication(sys.argv)
+    #win = Window()
+    #win.show()
+    #sys.exit(app.exec())
+    traj = md.load("Data/BTL.xtc", top="Data/BTL.pdb")
+    parameter = ft.readParameters("Data/exp_parameters.json")
+    experiment_fd = ft.Experiment('Data', parameter, traj, compute_anisotropy=False)
+
+
+
+

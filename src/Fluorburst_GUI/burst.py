@@ -13,6 +13,7 @@ import pickle
 import copy
 import pandas as pd
 import jsonschema
+import mdtraj as md
 import sys
 from relaxation import relaxation
 
@@ -155,7 +156,7 @@ class Ensemble:
     """
 
     # TODO change input reading to xtc and pdb
-    def __init__(self, directory, parameters, compute_anisotropy=False, verbose=True, units="A"):
+    def __init__(self, directory, parameters, md_trajectory, compute_anisotropy=False, verbose=True, units="A"):
         self.species = [] # initialisieren Spezies Liste
         ps = parameters["species"] # Parameter auslesen
         for i in range(len(ps["name"])): # Liste der Namen sollten durch die xtc oder PDB Dateien entstehen bzw. Lister der eingeladenen Dateien
@@ -192,6 +193,7 @@ class Ensemble:
                             ps["name"][i],
                             ps["probability"][i],
                             filelist_rkappa,
+                            md_trajectory,
                             ps["n_trajectory_splits"],
                             filelist_don_coords,
                             filelist_acc_coords,
@@ -203,7 +205,7 @@ class Ensemble:
                     print("Loading files...")
                 self.species.append(
                     Species(
-                        ps["name"][i], ps["probability"][i], filelist_rkappa, ps["n_trajectory_splits"], units=units
+                        ps["name"][i], ps["probability"][i], filelist_rkappa, md_trajectory, ps["n_trajectory_splits"], units=units
                     )
                 )
 
@@ -242,6 +244,7 @@ class Species:
         name, # Name dieser Spezies aus Liste
         probability, # Wahscheinlichkeit
         filelist_rkappa, # Rkappa_files
+        md_trajectory,
         n_trajectory_splits=None, # parameter
         filelist_don_coords=None, # files (Obsolet wenn MD Traj)
         filelist_acc_coords=None, # files (Obsolet wenn MD Traj)
@@ -251,37 +254,115 @@ class Species:
         self.probability = probability
         self.trajectories = [] # Liste mit Trajektorien intitialisieren
         total_frames = 0
-        for i, rkappa_filename in enumerate(filelist_rkappa): # Für alle vorhandenen r_kappa Files
-            if filelist_don_coords and filelist_acc_coords:
-                traj = Trajectory.from_file(
-                    rkappa_filename, filelist_don_coords[i], filelist_acc_coords[i], units=units
-                )
-            else:
-                traj = Trajectory.from_file(rkappa_filename, units=units)
 
-            if n_trajectory_splits:
-                time = np.array_split(traj.time, n_trajectory_splits)
-                R = np.array_split(traj.R, n_trajectory_splits)
-                kappasquare = np.array_split(traj.kappasquare, n_trajectory_splits)
-                if traj.donor_xyz is not None:
-                    donor_xyz = np.array_split(traj.donor_xyz, n_trajectory_splits)
-                else:
-                    donor_xyz = [None] * n_trajectory_splits
-                if traj.acceptor_xyz is not None:
-                    acceptor_xyz = np.array_split(traj.acceptor_xyz, n_trajectory_splits)
-                else:
-                    acceptor_xyz = [None] * n_trajectory_splits
-                for i in range(n_trajectory_splits):
-                    time[i] = np.array([k * (time[i][1] - time[i][0]) for k in range(len(time[i]))])
-                    traj = Trajectory(time[i], R[i], kappasquare[i], donor_xyz[i], acceptor_xyz[i], units=units)
-                    self.trajectories.append(traj)
-                    total_frames += len(traj.time)
+        traj = Trajectory.from_trajectory(md_trajectory)
+        if n_trajectory_splits:
+            time = np.array_split(traj.time, n_trajectory_splits)
+            R = np.array_split(traj.R, n_trajectory_splits)
+            kappasquare = np.array_split(traj.kappasquare, n_trajectory_splits)
+            if traj.donor_xyz is not None:
+                donor_xyz = np.array_split(traj.donor_xyz, n_trajectory_splits)
             else:
+                donor_xyz = [None] * n_trajectory_splits
+            if traj.acceptor_xyz is not None:
+                acceptor_xyz = np.array_split(traj.acceptor_xyz, n_trajectory_splits)
+            else:
+                acceptor_xyz = [None] * n_trajectory_splits
+            for i in range(n_trajectory_splits):
+                time[i] = np.array([k * (time[i][1] - time[i][0]) for k in range(len(time[i]))])
+                traj = Trajectory(time[i], R[i], kappasquare[i], donor_xyz[i], acceptor_xyz[i], units=units)
                 self.trajectories.append(traj)
                 total_frames += len(traj.time)
+        else:
+            self.trajectories.append(traj)
+            total_frames += len(traj.time)
+        #
+        # for traj in self.trajectories:
+        #     setattr(traj, "weight", len(traj.time) / total_frames)
 
-        for traj in self.trajectories:
-            setattr(traj, "weight", len(traj.time) / total_frames)
+        # for i, rkappa_filename in enumerate(filelist_rkappa): # Für alle vorhandenen r_kappa Files
+        #     if filelist_don_coords and filelist_acc_coords:
+        #         traj = Trajectory.from_file(
+        #             rkappa_filename, filelist_don_coords[i], filelist_acc_coords[i], units=units
+        #         )
+        #     else:
+        #         traj = Trajectory.from_file(rkappa_filename, units=units)
+        #
+        #     if n_trajectory_splits:
+        #         time = np.array_split(traj.time, n_trajectory_splits)
+        #         R = np.array_split(traj.R, n_trajectory_splits)
+        #         kappasquare = np.array_split(traj.kappasquare, n_trajectory_splits)
+        #         if traj.donor_xyz is not None:
+        #             donor_xyz = np.array_split(traj.donor_xyz, n_trajectory_splits)
+        #         else:
+        #             donor_xyz = [None] * n_trajectory_splits
+        #         if traj.acceptor_xyz is not None:
+        #             acceptor_xyz = np.array_split(traj.acceptor_xyz, n_trajectory_splits)
+        #         else:
+        #             acceptor_xyz = [None] * n_trajectory_splits
+        #         for i in range(n_trajectory_splits):
+        #             time[i] = np.array([k * (time[i][1] - time[i][0]) for k in range(len(time[i]))])
+        #             traj = Trajectory(time[i], R[i], kappasquare[i], donor_xyz[i], acceptor_xyz[i], units=units)
+        #             self.trajectories.append(traj)
+        #             total_frames += len(traj.time)
+        #     else:
+        #         self.trajectories.append(traj)
+        #         total_frames += len(traj.time)
+        #
+        # for traj in self.trajectories:
+        #     setattr(traj, "weight", len(traj.time) / total_frames)
+
+
+def calculate_inter_dye_distance(mean_donor_atom: list, mean_acceptor_atom: list) -> list:
+            """
+            Funktion zur Berechnung der Distanz zweier Atome
+
+            :param mean_donor_atom: List --> Trajektorie der Koordinaten des mittleren C Atoms des Donorfarbstoffes
+            :param mean_acceptor_atom: List --> Trajektorie der Koordinaten des mittleren C Atoms des Acceptorfarbstoffes
+            :return: Liste der Distanzen in Angstrom
+            """
+            return np.sqrt(np.sum((np.subtract(mean_donor_atom, mean_acceptor_atom)) ** 2, axis=1))
+
+
+def calculate_kappa2(don_dipol: list, acc_dipol: list) -> list:
+            """
+            Funktion zur Berechnung von kappa^2 aus den Koordinaten des Dipolvektors, mit zwei gegebenen Atomen
+
+            :param don_dipol: List --> [[[x, v, z],..., [x, v, z]], [[x, v, z],...,[x, v, z]]] Arry mit den Koordinaten der Trajektorie die den Dipolvektor des Donorfarbstoffs definieren
+            :param acc_dipol: List --> [[[x, v, z],..., [x, v, z]], [[x, v, z],...,[x, v, z]]] Arry mit den Koordinaten der Trajektorie die den Dipolvektor des Acceptorfarbstoffs definieren
+            :return: Numpy array mit kappa^2 Werten
+            """
+            kappas = []
+            A14 = acc_dipol[0]
+            D14 = don_dipol[0]
+            A2 = acc_dipol[1]
+            D2 = don_dipol[1]
+
+            # Richtungsvektor bestimmen
+            dvect = 0 - D2 + D14
+            avect = 0 - A2 + A14
+            # Vektoren Normieren
+            dvect = np.divide(dvect, np.expand_dims(np.linalg.norm(dvect, axis=1), axis=1))
+            avect = np.divide(avect, np.expand_dims(np.linalg.norm(avect, axis=1), axis=1))
+
+            # Mittelpunkt des Farbstoffes bestimmen!
+            # TODO Zeilen 27 - 31 zusammenführen!
+            # Endpostion der Ortsvektoren
+            dpos = 0 + D2 + D14
+            apos = 0 + A2 + A14
+            # Die Nenner beim Bruch ist die Anzahl der Atome?
+            # Mittelpunkt des Farbstoffes!
+            dpos = 1 / 2 * dpos
+            apos = 1 / 2 * apos
+
+            # Vektor zwischen den Mittelpunkten der Farbstoffe
+            dist = dpos - apos
+            distnorm = np.divide(dist, np.expand_dims(np.linalg.norm(dist, axis=1), axis=1))
+
+            kappa = np.sum(dvect * avect, axis=1) - (
+                    3 * (np.sum(dvect * distnorm, axis=1)) * np.sum(distnorm * avect, axis=1))
+            kappa = kappa ** 2
+            return kappa
 
 
 class Trajectory:
@@ -318,6 +399,52 @@ class Trajectory:
             self.checkLengthIdentity(self.length, donor_xyz, acceptor_xyz)
         self.donorTD = self.transitionDipole(donor_xyz)
         self.acceptorTD = self.transitionDipole(acceptor_xyz)
+
+    @classmethod
+    def from_trajectory(cls, md_trajectory, don_coords_filename=None, acc_coords_filename=None, units="A"):
+        """Create a burst.Trajectory class from loaded trajectory (md_traj)
+
+        Parameters
+        ----------
+        rkappa_filename : str
+            name of a .dat file containing inter-dye distances and kappasquare values
+        don_coords_filename, acc_coords_filename : str, optional=None
+            name of an .xvg file containing xyz-coordinates of two atoms defining
+            the transition dipole of the donor or acceptor dye respectively
+        units : {'A', 'nm'}, optional='A'
+            distance units ('A': Angstroms, 'nm': nanometers)
+        """
+
+        traj_df = md_trajectory.top.to_dataframe()[0]
+
+        # TODO Die Farbstoffe sollten über die GUI Spezifiziert werden zumindest Farbstoff und die Residue Nummer --> Dipolatome sollten für Farbstoffe vordefiniert werden
+        D14 = traj_df.iloc[traj_df[((traj_df['name'] == 'C14') & (
+                traj_df['resName'] == 'C3W'))].index.values[0]]['serial']
+        D2 = traj_df.iloc[traj_df[((traj_df['name'] == 'C2') & (
+                traj_df['resName'] == 'C3W'))].index.values[0]]['serial']
+        A14 = traj_df.iloc[traj_df[((traj_df['name'] == 'C14') & (
+                traj_df['resName'] == 'C5W'))].index.values[0]]['serial']
+        A2 = traj_df.iloc[traj_df[((traj_df['name'] == 'C2') & (
+                traj_df['resName'] == 'C5W'))].index.values[0]]['serial']
+        MD = traj_df.iloc[traj_df[((traj_df['name'] == 'C11') & (
+                traj_df['resName'] == 'C3W'))].index.values[0]]['serial']
+        MA = traj_df.iloc[traj_df[((traj_df['name'] == 'C32') & (
+                traj_df['resName'] == 'C5W'))].index.values[0]]['serial']
+
+        donor = [md_trajectory.xyz[:, D14], md_trajectory.xyz[:, D2]]
+        acceptor = [md_trajectory.xyz[:, A14], md_trajectory.xyz[:, A2]]
+        mean_donor = md_trajectory.xyz[:, MD]
+        mean_acceptor = md_trajectory.xyz[:, MA]
+
+        kappa2 = calculate_kappa2(donor, acceptor)
+        R_DA = calculate_inter_dye_distance(mean_donor, mean_acceptor)
+        time = np.arange(0, 1000010, 10)
+
+        #df = pd.DataFrame(list(zip(time, R_DA, kappa2)))
+
+        #df.to_csv('Data/rkappa.dat', sep='\t', header=False, index=False)
+
+        return cls(time, R_DA, kappa2)
 
     @classmethod
     def from_file(cls, rkappa_filename, don_coords_filename=None, acc_coords_filename=None, units="A"):
@@ -621,16 +748,19 @@ class Experiment:
         self,
         directory,
         parameters,
+        md_trajectory,
         binwidth=0.025,
         compute_anisotropy=False,
         verbose=True,
         show_progress=True,
         units="A",
+
     ):
         self.parameters = parameters # Dict mit Parametern
         self.parameters["fret"]["R0_const"] = parameters["fret"]["R0"] / parameters["fret"]["kappasquare"] ** (1 / 6) # Konstant FRET zu den Parametern hinzufügen
         self.compute_anisotropy = compute_anisotropy # Bool
-        self.ensemble = Ensemble(directory, parameters, compute_anisotropy, verbose, units=units) # Klassenaufruf
+        self.md_trajectory = md_trajectory
+        self.ensemble = Ensemble(directory, parameters,  md_trajectory, compute_anisotropy, verbose, units=units) # Klassenaufruf
         self.calcTransitionRates() # Funktionsaufruf
 
         if verbose:
@@ -677,8 +807,7 @@ class Experiment:
                             )
                         )
             else:
-                with multiprocessing.Pool() as pool:
-                    self.bursts = pool.map(self.calcBurst, burstsizes)
+                self.bursts = pool.map(self.calcBurst, burstsizes)
         else:
             n = self.parameters["sampling"]["nbursts"]
             burstsizes = self.calcBurstsizes()
@@ -1045,5 +1174,6 @@ k_ic (ns^-1)  {:0.2f}    {:0.2f}
 
 
 if __name__ == "__main__":
+    traj = md.load("Data/BTL.xtc", top="Data/BTL.pdb")
     parameters = readParameters("Data/exp_parameters.json")
-    experiment = Experiment("Data/trajectory", parameters, binwidth=0.025, compute_anisotropy=False, verbose=True, units="A")
+    experiment = Experiment("Data/trajectory_214", parameters,traj, binwidth=0.025, compute_anisotropy=False, verbose=True, units="A")
