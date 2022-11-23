@@ -1,0 +1,18 @@
+name: frettools
+channels:
+  - https://levinthal:paradox@conda.rosettacommons.org
+  - conda-forge
+  - defaults
+dependencies:
+  - pymol
+  - fretraj
+  - ipykernel
+  - matplotlib
+  - seaborn
+  - lmfit
+  - jupyter
+  - mdanalysis
+  - mdanalysistests
+  - labellib
+  - pyrosetta
+prefix: /Users/felixerichson/anaconda3/envs/frettools
