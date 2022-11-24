@@ -11,7 +11,7 @@ smFRET experimental data.
 
 ## Installation
 
-Der Code kann unter dem grünen Button "Code" heruntergeladen oder über das Terminal geklont werden.
+The code can be downloaded under the green button "Code" or cloned via the terminal:
 ```
 git clone https://github.com/felixErichson/FAMP_rna.git
 ```
