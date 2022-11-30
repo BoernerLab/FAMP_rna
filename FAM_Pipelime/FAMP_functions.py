@@ -9,8 +9,10 @@ import lmfit
 import shutil
 import re
 import os
+import fileinput
 from sys import platform
 from matplotlib import rcParams
+
 rcParams['font.family'] = 'sans-serif'
 rcParams['font.sans-serif'] = ['Open Sans']
 from matplotlib.ticker import FormatStrFormatter
@@ -816,6 +818,33 @@ def reduce_center_xtc(md_dir):
         f"gmx trjconv -f {md_dir}/md0/input.xtc -s {md_dir}/md0/input.tpr -o {md_dir}/md0/input_s1.pdb -n {md_dir}_analysis/Index_Files/RNA.ndx -pbc mol -center -b 1 -e 10")
 
 
+def rewrite_atoms_after_unlabeling(analysis_dir: str):
+    """
+    Function to rename dye specific bases to normal bases in the unlabeled pdb file. Example: RUM --> RU
+    :param analysis_dir: name of analysis directory
+    :return: none
+    """
+    with fileinput.FileInput(f'{analysis_dir}/raw/input_unlabeled_s1.pdb', inplace=True, backup='.bak') as file:
+        for line in file:
+            print(line.replace("RUM", " RU"), end='')
+
+    with fileinput.FileInput(f'{analysis_dir}/raw/input_unlabeled_s1.pdb', inplace=True, backup='.bak') as file:
+        for line in file:
+            print(line.replace("RGO", " RG"), end='')
+
+    with fileinput.FileInput(f'{analysis_dir}/raw/input_unlabeled_s1.pdb', inplace=True, backup='.bak') as file:
+        for line in file:
+            print(line.replace("RCO", " RC"), end='')
+
+    with fileinput.FileInput(f'{analysis_dir}/raw/input_unlabeled_s1.pdb', inplace=True, backup='.bak') as file:
+        for line in file:
+            print(line.replace("RUO", " RU"), end='')
+
+    with fileinput.FileInput(f'{analysis_dir}/raw/input_unlabeled_s1.pdb', inplace=True, backup='.bak') as file:
+        for line in file:
+            print(line.replace("RAO", " RA"), end='')
+
+
 def remove_dyes_from_trajectory(md_analyse_dir):
     """
     Create a trjectory of MD run without dyes.
@@ -831,6 +860,8 @@ def remove_dyes_from_trajectory(md_analyse_dir):
         f"gmx trjconv -f {md_analyse_dir}/raw/input_centered.xtc -s {md_analyse_dir}/raw/input.tpr -o {md_analyse_dir}/raw/input_unlabeled.xtc -n {md_analyse_dir}/analysis/Index_Files/RNA_without_Dyes_python.ndx -pbc mol -center")
     run_command(
         f"gmx trjconv -f {md_analyse_dir}/raw/input_centered.xtc -s {md_analyse_dir}/raw/input.tpr -o {md_analyse_dir}/raw/input_unlabeled_s1.pdb -n {md_analyse_dir}/analysis/Index_Files/RNA_without_Dyes_python.ndx -pbc mol -center -b 1 -e 10")
+
+    rewrite_atoms_after_unlabeling(md_analyse_dir)
 
 
 def copy_files_to_raw(md_dir):
