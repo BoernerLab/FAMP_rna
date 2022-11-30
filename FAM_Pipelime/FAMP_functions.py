@@ -809,6 +809,7 @@ def reduce_center_xtc(md_dir):
     :return: none
     """
     make_ndx_of_rna(f"{md_dir}/md0/input.gro", f"{md_dir}/analysis/Index_Files/RNA.ndx")
+    md_dir = f"{os.getcwd()}/{md_dir}"
     run_command(
         f"gmx trjconv -f {md_dir}/md0/input.xtc -s {md_dir}/md0/input.tpr -o {md_dir}/md0/input_centered.xtc -n {md_dir}_analysis/Index_Files/RNA.ndx -pbc mol -center")
     run_command(
@@ -824,12 +825,12 @@ def remove_dyes_from_trajectory(md_analyse_dir):
     :param md_analyse_dir: name of the MD analysis directory
     :return: none
     """
-    make_ndx_of_rna_without_dyes(f"{md_analyse_dir}/raw/input.gro",
-                                 f'{md_analyse_dir}/Index_Files/RNA_without_Dyes_python.ndx')
+    make_ndx_of_rna_without_dyes(f"{md_analyse_dir}/analysis/raw/input.gro",
+                                 f'{md_analyse_dir}analysis//Index_Files/RNA_without_Dyes_python.ndx')
     run_command(
-        f"gmx trjconv -f {md_analyse_dir}/raw/input_centered.xtc -s {md_analyse_dir}/raw/input.tpr -o {md_analyse_dir}/raw/input_unlabeled.xtc -n {md_analyse_dir}/Index_Files/RNA_without_Dyes_python.ndx -pbc mol -center")
+        f"gmx trjconv -f {md_analyse_dir}/raw/input_centered.xtc -s {md_analyse_dir}/raw/input.tpr -o {md_analyse_dir}/raw/input_unlabeled.xtc -n {md_analyse_dir}/analysis/Index_Files/RNA_without_Dyes_python.ndx -pbc mol -center")
     run_command(
-        f"gmx trjconv -f {md_analyse_dir}/raw/input_centered.xtc -s {md_analyse_dir}/raw/input.tpr -o {md_analyse_dir}/raw/input_unlabeled_s1.pdb -n {md_analyse_dir}/Index_Files/RNA_without_Dyes_python.ndx -pbc mol -center -b 1 -e 10")
+        f"gmx trjconv -f {md_analyse_dir}/raw/input_centered.xtc -s {md_analyse_dir}/raw/input.tpr -o {md_analyse_dir}/raw/input_unlabeled_s1.pdb -n {md_analyse_dir}/analysis/Index_Files/RNA_without_Dyes_python.ndx -pbc mol -center -b 1 -e 10")
 
 
 def copy_files_to_raw(md_dir):
