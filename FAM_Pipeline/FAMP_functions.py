@@ -34,7 +34,6 @@ variables_dict = {
     'bins': 25
 }
 
-
 def check_os():
     """
     Print's the OS you are worling on
