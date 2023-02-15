@@ -39,13 +39,14 @@ class Modeling:
 
     @staticmethod
     def run_command(command: str):
-        """
-        Run a bash command with python subprocess.
+        process = subprocess.Popen(["bash", "-c", command], stdout=subprocess.PIPE, text=True)
+        while process.stdout.readable():
+            line = process.stdout.readline()
 
-        :param command: Bash command as string.
-        :return: none
-        """
-        subprocess.call(["bash", "-c", command], stdout=subprocess.PIPE)
+            if not line:
+                break
+
+            print(line.strip())
 
     def make_result_dir(self, directory_name):
         """
@@ -86,17 +87,6 @@ class Modeling:
             text_file.write(seq)
         return seq
 
-    def read_secondary_structure(self):
-        sec_struct = ""
-        seq = ""
-        with open(self.file_path_sequence) as f:
-            for i, line in enumerate(f):
-                if i == 0:
-                    sec_struct = line.strip()
-                if i == 1:
-                    seq = line.strip()
-        return [sec_struct, seq]
-
     def reduce_sds_file(self, path_result_file: str):
         """
         Reduces a secondary structure file to only the sequence and the dot bracket formatted 2D structure
@@ -133,54 +123,92 @@ class Modeling:
                          f"> {self.working_dir}/secondary_prediction/RNA_fold_output.txt")
         self.reduce_sds_file("RNA_fold_output.txt")
 
-    def write_rosetta_parameter(self, secondary_structure_file, rosetta_parameter):
-        self.make_result_dir("rosetta_results")
-        secondary_structure = self.read_secondary_structure()
-        if rosetta_parameter["minimize_rna"]:
-            file_content = f"{rosetta_parameter['path_to_rosetta']} -nstruct {rosetta_parameter['nstruct']} -sequence '{secondary_structure[1]}'  -secstruct '{secondary_structure[0]}' -silent silent_out.out -minimize_rna {rosetta_parameter['minimize_rna']} -cycles {rosetta_parameter['cycles']}"
-        else:
-            file_content = f"{rosetta_parameter['path_to_rosetta']} -nstruct {rosetta_parameter['nstruct']} -sequence '{secondary_structure[1]}'  -secstruct '{secondary_structure[0]}' -silent silent_out.out {rosetta_parameter['minimize_rna']} -cycles {rosetta_parameter['cycles']}"
+    @staticmethod
+    def read_secondary_structure(path_2d_structure_file):
+        sec_struct = ""
+        seq = ""
+        with open(path_2d_structure_file) as f:
+            for i, line in enumerate(f):
+                if i == 0:
+                    sec_struct = line.strip()
+                if i == 1:
+                    seq = line.strip()
+        return [sec_struct, seq]
 
-        with open("rosetta_results/FARFAR2.txt", "w") as text_file:
-            text_file.write(file_content)
-
-    def predict_3D_structure(self, secondary_structure_file, parameter):
-        self.write_rosetta_parameter(secondary_structure_file, parameter)
-        if platform == "linux" or platform == "linux2":
-            # run_command("./scripts/linux/rosetta/submitJobs.sh -i rosetta_results/FARFAR2.txt -d rosetta_results -p 1")
-            print(subprocess.run(["bash", "-c",
-                                  "./scripts/linux/rosetta/submitJobs.sh -i rosetta_results/FARFAR2.txt -d rosetta_results -p 1"],
-                                 stdout=subprocess.PIPE, text=True))
-        elif platform == "darwin":
-            # run_command("./scripts/mac_os/rosetta/submitJobs.sh -i rosetta_results/FARFAR2.txt -d rosetta_results -p 1")
-            print(subprocess.run(["bash", "-c",
-                                  "./scripts/mac_os/rosetta/submitJobs.sh -i rosetta_results/FARFAR2.txt -d rosetta_results -p 1"],
-                                 stdout=subprocess.PIPE, text=True))
-
-    def extract_pdb(self, number_of_pdb: int) -> None:
+    def write_rna_denovo_parameter(self, path_2d_structure_file: str) -> str:
         """
-        Exports structures from the .out file to a PDB file.
-
+        Writes a txt file with the rosetta parameter to run rosetta scripts
         Parameters
         ----------
-        number_of_pdb: Number of PDB structures to be exported from the ensemble
+        path_2d_structure_file
 
         Returns
         -------
 
         """
+        self.make_result_dir("rosetta_results")
+        secondary_structure = self.read_secondary_structure(path_2d_structure_file)
+        flags = f"{self.modeling_parameter['path_to_rosetta']} " \
+                       f"-nstruct {self.modeling_parameter['nstruct']} " \
+                       f"-sequence '{secondary_structure[1]}'  " \
+                       f"-secstruct '{secondary_structure[0]}' " \
+                       f"-silent {self.working_dir}/rosetta_results/silent_out.out " \
+                       f"-minimize_rna {self.modeling_parameter['minimize_rna']} " \
+                       f"-cycles {self.modeling_parameter['cycles']}"
+
+        return flags
+
+    def predict_3d_structure(self, path_2d_structure_file: str) -> None:
+        """
+        Uses the rosetta modul rna_denovo to predict tertiary structures
+
+        :param path_2d_structure_file: Path to the secondary structure file.
+
+        :return: None
+        """
+        command = self.write_rna_denovo_parameter(path_2d_structure_file)
+        self.run_command(command)
+
+    def extract_pdb(self, number_of_pdb: int) -> None:
+        """
+        Exports structures from the .out file to a PDB file.
+
+        :param: number_of_pdb: Number of PDB structures to be exported from the ensemble
+
+        :return: None
+
+        """
+        if number_of_pdb > self.modeling_parameter["nstruct"]:
+            number_of_pdb = self.modeling_parameter["nstruct"]
 
         if platform == "linux" or platform == "linux2":
-            self.run_command(f"./scripts/linux/rosetta/extract_pdb.sh -d ./rosetta_results/out/1/ -n {number_of_pdb}"
-                             f" -m true -s ./rosetta_results/out/1/silent_out.out")
+            self.run_command(f"./scripts/linux/rosetta/extract_pdb.sh "
+                             f"-d {self.working_dir}/rosetta_results/ "
+                             f"-n {number_of_pdb}"
+                             f" -m true "
+                             f"-s {self.working_dir}/rosetta_results/silent_out.out")
 
         elif platform == "darwin":
-            self.run_command(f"./scripts/mac_os/rosetta/extract_pdb.sh -d ./rosetta_results/out/1/ -n {number_of_pdb} "
-                             f"-m true -s ./rosetta_results/out/1/silent_out.out")
+            self.run_command(f"./scripts/mac_os/rosetta/extract_pdb.sh "
+                             f"-d {self.working_dir}/rosetta_results/ "
+                             f"-n {number_of_pdb} "
+                             f"-m true "
+                             f"-s {self.working_dir}/rosetta_results/silent_out.out")
+
 
 if __name__ == '__main__':
 
+    rosetta_parameter = {
+        "path_to_rosetta": "rna_denovo.default.macosclangrelease",
+        "nstruct": 3,
+        "fasta": "RNA_Hairpin.fasta",
+        "minimize_rna": True,
+        "cycles": 20
+    }
+
     print(os.getcwd())
     params = {}
-    test = Modeling(f"{os.getcwd()}/data", f"{os.getcwd()}/data/RNA_Hairpin.fasta", params)
+    test = Modeling(f"{os.getcwd()}/data", f"{os.getcwd()}/data/RNA_Hairpin.fasta", rosetta_parameter)
     test.predict_2d_structure()
+    test.predict_3d_structure(f"{os.getcwd()}/data/secondary_prediction/dot_bracket.secstruct")
+    test.extract_pdb(5)
