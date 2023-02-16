@@ -149,12 +149,12 @@ class Modeling:
         self.make_result_dir("rosetta_results")
         secondary_structure = self.read_secondary_structure(path_2d_structure_file)
         flags = f"{self.modeling_parameter['path_to_rosetta']} " \
-                       f"-nstruct {self.modeling_parameter['nstruct']} " \
-                       f"-sequence '{secondary_structure[1]}'  " \
-                       f"-secstruct '{secondary_structure[0]}' " \
-                       f"-silent {self.working_dir}/rosetta_results/silent_out.out " \
-                       f"-minimize_rna {self.modeling_parameter['minimize_rna']} " \
-                       f"-cycles {self.modeling_parameter['cycles']}"
+                f"-nstruct {self.modeling_parameter['nstruct']} " \
+                f"-sequence '{secondary_structure[1]}'  " \
+                f"-secstruct '{secondary_structure[0]}' " \
+                f"-silent {self.working_dir}/rosetta_results/silent_out.out " \
+                f"-minimize_rna {self.modeling_parameter['minimize_rna']} " \
+                f"-cycles {self.modeling_parameter['cycles']}"
 
         return flags
 
@@ -197,7 +197,6 @@ class Modeling:
 
 
 if __name__ == '__main__':
-
     rosetta_parameter = {
         "path_to_rosetta": "rna_denovo.default.macosclangrelease",
         "nstruct": 3,
