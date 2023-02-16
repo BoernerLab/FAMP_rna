@@ -6,9 +6,10 @@ import shutil
 
 class MDSimulation:
     def __init__(self, working_dir: str, file_path_input: str, md_parameter: dict) -> None:
-        self.working_dir = working_dir
+        self.working_dir = self.create_working_dir(working_dir)
         self.file_path_input = file_path_input
         self.md_parameter = md_parameter
+        self.path_simulation_folder = self.get_simulation_path()
 
     @staticmethod
     def run_command_win(command: str, cmd_in: bytes):
@@ -39,8 +40,17 @@ class MDSimulation:
         return int(1000000 * sim_time / 2)
 
     @staticmethod
-    def grad_to_kelvin(grad):
-        return grad + 273
+    def degree_to_kelvin(degree):
+        return degree + 273
+
+    @staticmethod
+    def create_working_dir(working_dir):
+        if os.path.isdir(working_dir):
+            print("The specified folder exists.")
+        else:
+            os.mkdir(working_dir)
+            print("The specified folder does not exist but was created.")
+        return working_dir
 
     def make_result_dir(self, directory_name):
         """
@@ -60,10 +70,13 @@ class MDSimulation:
         else:
             print(f"Successfully created the directory {result_dir}. Results can be found there")
 
-    def change_tamperature_in_nvt(self, temperature, dir):
-        temp_in_K = self.grad_to_kelvin(temperature)
+    def get_simulation_path(self):
+        return f"{self.working_dir}/{self.md_parameter['simulation_name']}"
+
+    def change_tamperature_in_nvt(self, temperature):
+        temp_in_K = self.degree_to_kelvin(temperature)
         content = []
-        with open(f"{dir}/mdp/nvt.mdp", 'r') as f:
+        with open(f"{self.path_simulation_folder}/mdp/nvt.mdp", 'r') as f:
             for i, line in enumerate(f):
                 line = line.strip()
                 if line.startswith(('ref_t', 'gen_temp')):
@@ -73,14 +86,14 @@ class MDSimulation:
                     content.append(line)
 
         # print(content)
-        with open(f"{dir}/mdp/nvt.mdp", 'w') as f:
+        with open(f"{self.path_simulation_folder}/mdp/nvt.mdp", 'w') as f:
             for l in content:
                 f.write("%s\n" % l)
 
-    def change_tamperature_in_npt(self, temperature, dir):
-        temp_in_K = self.grad_to_kelvin(temperature)
+    def change_tamperature_in_npt(self, temperature):
+        temp_in_K = self.degree_to_kelvin(temperature)
         content = []
-        with open(f"{dir}/mdp/npt.mdp", 'r') as f:
+        with open(f"{self.path_simulation_folder}/mdp/npt.mdp", 'r') as f:
             for i, line in enumerate(f):
                 line = line.strip()
                 if line.startswith(('ref_t')):
@@ -90,14 +103,14 @@ class MDSimulation:
                     content.append(line)
 
         # print(content)
-        with open(f"{dir}/mdp/npt.mdp", 'w') as f:
+        with open(f"{self.path_simulation_folder}/mdp/npt.mdp", 'w') as f:
             for l in content:
                 f.write("%s\n" % l)
 
-    def change_sim_time_in_md0(self, time, dir):
+    def change_sim_time_in_md0(self, time):
         simulation_steps = self.sim_time_to_steps(time)
         content = []
-        with open(f"{dir}/mdp/md0.mdp", 'r') as f:
+        with open(f"{self.path_simulation_folder}/mdp/md0.mdp", 'r') as f:
             for i, line in enumerate(f):
                 line = line.strip()
                 if line.startswith('nsteps'):
@@ -107,41 +120,51 @@ class MDSimulation:
                     content.append(line)
 
         print(content)
-        with open(f"{dir}/mdp/md0.mdp", 'w') as f:
+        with open(f"{self.path_simulation_folder}/mdp/md0.mdp", 'w') as f:
             for l in content:
                 f.write("%s\n" % l)
 
-    def copy_files_to_sim_dir(self, parameter, md_dir_name):
+    def copy_files_to_sim_dir(self):
         src_folder = self.working_dir + "./scripts/gromacs"
-        dst_folder = self.working_dir + f"/{md_dir_name}"
+        dst_folder = self.working_dir + f"/{self.md_parameter['simulation_name']}"
 
         if os.path.exists(dst_folder) and os.path.isdir(dst_folder):
-            shutil.rmtree(dst_folder)
+            print("MD run already exists. To make a new Simulation change the Name od the Simulation in the MD parameter")
+        else:
+            self.make_result_dir(self.md_parameter['simulation_name'])
 
-        self.make_result_dir(md_dir_name)
+        if os.path.exists(dst_folder + "/amber14sb_OL15.ff") and os.path.isdir(dst_folder + "/amber14sb_OL15.ff"):
+            pass
+        else:
+            shutil.copytree(src_folder + "/amber14sb_OL15.ff", dst_folder + "/amber14sb_OL15.ff")
 
-        shutil.copytree(src_folder + "/amber14sb_OL15.ff", dst_folder + "/amber14sb_OL15.ff")
-        shutil.copytree(src_folder + "/mdp", dst_folder + "/mdp")
-        shutil.copy(src_folder + "/single_run.sh", dst_folder + "/single_run.sh")
+        if os.path.exists(dst_folder + "/mdp") and os.path.isdir(dst_folder + "/mdp"):
+            pass
+        else:
+            shutil.copytree(src_folder + "/mdp", dst_folder + "/mdp")
 
-    def prepare_simulation(self, simulation_parameter, md_dir_name):
-        self.make_result_dir(self.md_parameter["simulation_name"])
-        self.copy_files_to_sim_dir(simulation_parameter, md_dir_name)
+    def prepare_new_md_run(self):
+        self.copy_files_to_sim_dir()
         # Ändern der Parameter in den mdp files
-        self.change_tamperature_in_nvt(simulation_parameter["temperature[°C]"], md_dir_name)
-        self.change_tamperature_in_npt(simulation_parameter["temperature[°C]"], md_dir_name)
-        self.change_sim_time_in_md0(simulation_parameter["simulation_time[ns]"], md_dir_name)
+        self.change_tamperature_in_nvt(simulation_parameter["temperature[°C]"])
+        self.change_tamperature_in_npt(simulation_parameter["temperature[°C]"])
+        self.change_sim_time_in_md0(simulation_parameter["simulation_time[ns]"])
 
-    def copy_input_model(self, path_to_model_pdb, dir):
+    def update_parameter(self):
+        self.change_tamperature_in_nvt(simulation_parameter["temperature[°C]"])
+        self.change_tamperature_in_npt(simulation_parameter["temperature[°C]"])
+        self.change_sim_time_in_md0(simulation_parameter["simulation_time[ns]"])
+
+    def copy_input_model(self):
         """
-        Compieng the modeling result structure to the MD simulation directory. File is renamed to input.pdb
+        Copies the modeling result structure to the MD simulation directory. File is renamed to input.pdb
 
         :param path_to_model_pdb: Path to the modeling result structure
         :param dir: Path to the MD run directory
         :return:
         """
         self.make_result_dir(self.md_parameter["simulation_name"])
-        shutil.copy(os.getcwd() + f"{path_to_model_pdb}", f"{os.getcwd()}/{dir}/input.pdb")
+        shutil.copy(f"{self.file_path_input}", f"{self.working_dir}/{self.md_parameter['simulation_name']}/input.pdb")
 
     def solvate_molecule(structureFile: str, simulation_parameter: dict, dir: str, working_dir_path: str):
         """
@@ -238,13 +261,14 @@ class MDSimulation:
 
 if __name__ == '__main__':
     simulation_parameter = {
-        "simulation_name": "Hairpin_labeled",
+        "simulation_name": "hairpin_labeled",
         "c_magnesium_ions[mol/l]": 0.00,
         "simulation_time[ns]": 0.3,
         "temperature[°C]": 25,
         "dist_to_box[nm]": "1",
     }
-    hairpin_labeled = MDSimulation(f"{os.getcwd()}/data",
-                                   f"{os.getcwd()}/data/rosetta_results/silent_out.pdb",
-                                   simulation_parameter)
+    print(os.getcwd())
+    hairpin_labeled = MDSimulation(working_dir=f"{os.getcwd()}/data",
+                                   file_path_input=f"{os.getcwd()}/data/rosetta_results/silent_out.pdb",
+                                   md_parameter=simulation_parameter)
 
