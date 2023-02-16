@@ -73,7 +73,7 @@ class MDSimulation:
     def get_simulation_path(self):
         return f"{self.working_dir}/{self.md_parameter['simulation_name']}"
 
-    def change_tamperature_in_nvt(self, temperature):
+    def change_temperature_in_nvt(self, temperature):
         temp_in_K = self.degree_to_kelvin(temperature)
         content = []
         with open(f"{self.path_simulation_folder}/mdp/nvt.mdp", 'r') as f:
@@ -90,7 +90,7 @@ class MDSimulation:
             for l in content:
                 f.write("%s\n" % l)
 
-    def change_tamperature_in_npt(self, temperature):
+    def change_temperature_in_npt(self, temperature):
         temp_in_K = self.degree_to_kelvin(temperature)
         content = []
         with open(f"{self.path_simulation_folder}/mdp/npt.mdp", 'r') as f:
@@ -146,13 +146,13 @@ class MDSimulation:
     def prepare_new_md_run(self):
         self.copy_files_to_sim_dir()
         # Ändern der Parameter in den mdp files
-        self.change_tamperature_in_nvt(simulation_parameter["temperature[°C]"])
-        self.change_tamperature_in_npt(simulation_parameter["temperature[°C]"])
+        self.change_temperature_in_nvt(simulation_parameter["temperature[°C]"])
+        self.change_temperature_in_npt(simulation_parameter["temperature[°C]"])
         self.change_sim_time_in_md0(simulation_parameter["simulation_time[ns]"])
 
     def update_parameter(self):
-        self.change_tamperature_in_nvt(simulation_parameter["temperature[°C]"])
-        self.change_tamperature_in_npt(simulation_parameter["temperature[°C]"])
+        self.change_temperature_in_nvt(simulation_parameter["temperature[°C]"])
+        self.change_temperature_in_npt(simulation_parameter["temperature[°C]"])
         self.change_sim_time_in_md0(simulation_parameter["simulation_time[ns]"])
 
     def copy_input_model(self):
@@ -166,7 +166,7 @@ class MDSimulation:
         self.make_result_dir(self.md_parameter["simulation_name"])
         shutil.copy(f"{self.file_path_input}", f"{self.working_dir}/{self.md_parameter['simulation_name']}/input.pdb")
 
-    def solvate_molecule(structureFile: str, simulation_parameter: dict, dir: str, working_dir_path: str):
+    def solvate_molecule(self, structureFile: str, simulation_parameter: dict, dir: str, working_dir_path: str):
         """
         Running bash commands with python subprocess to solvate MD run with GROMACS. Reference solvate.sh.
 
@@ -175,39 +175,89 @@ class MDSimulation:
         :param dir: Path to MD run directory
         :return: none
         """
-        os.chdir(working_dir_path + f"/{dir}")
-        print(os.getcwd())
+        #os.chdir(working_dir_path + f"/{dir}")
+        #print(os.getcwd())
         structureName = structureFile[:-4]
-        make_result_dir("em")
-        run_command_win(
-            f"gmx pdb2gmx -f {structureFile} -o em/{structureName}.gro -p {structureName}.top -i em/{structureName}.itp -missing -ignh",
+        self.make_result_dir(f"{self.md_parameter['simulation_name']}/em")
+        self.run_command_win(
+            f"gmx pdb2gmx "
+            f"-f {self.path_simulation_folder}/input.pdb "
+            f"-o {self.path_simulation_folder}/em/{structureName}.gro "
+            f"-p {self.path_simulation_folder}/{structureName}.top "
+            f"-i {self.path_simulation_folder}/em/{structureName}.itp "
+            f"-missing "
+            f"-ignh",
             b"1\n 3\n")
 
-        run_command(f"gmx editconf -f em/{structureName}.gro -o em/{structureName}.gro -bt dodecahedron -d 1")
+        self.run_command(f"gmx editconf "
+                         f"-f {self.path_simulation_folder}/em/{structureName}.gro "
+                         f"-o {self.path_simulation_folder}/em/{structureName}.gro "
+                         f"-bt dodecahedron "
+                         f"-d {self.md_parameter['dist_to_box[nm]']}")
 
-        run_command(
-            f"gmx solvate -cp em/{structureName}.gro -cs tip4p.gro -o em/{structureName}.gro -p {structureName}.top ")
+        self.run_command(
+            f"gmx solvate "
+            f"-cp {self.path_simulation_folder}/em/{structureName}.gro "
+            f"-cs tip4p.gro "
+            f"-o {self.path_simulation_folder}/em/{structureName}.gro "
+            f"-p {self.path_simulation_folder}/{structureName}.top ")
 
-        run_command(
-            f"gmx grompp -f mdp/em.mdp -c em/{structureName}.gro -p {structureName}.top -o em/{structureName}.tpr -po em/{structureName}.mdp -maxwarn 2")
+        self.run_command(
+            f"gmx grompp "
+            f"-f {self.path_simulation_folder}/mdp/em.mdp "
+            f"-c {self.path_simulation_folder}/em/{structureName}.gro "
+            f"-p {self.path_simulation_folder}/{structureName}.top "
+            f"-o {self.path_simulation_folder}/em/{structureName}.tpr "
+            f"-po {self.path_simulation_folder}/em/{structureName}.mdp "
+            f"-maxwarn 2")
 
-        run_command_win(
-            f"gmx genion -s em/{structureName}.tpr -o em/{structureName}.gro -p {structureName}.top -nname Cl -pname K -neutral",
+        self.run_command_win(
+            f"gmx genion "
+            f"-s {self.path_simulation_folder}/em/{structureName}.tpr "
+            f"-o {self.path_simulation_folder}/em/{structureName}.gro "
+            f"-p {self.path_simulation_folder}/{structureName}.top "
+            f"-nname Cl "
+            f"-pname K "
+            f"-neutral",
             b"3\n")
 
-        run_command(
-            f"gmx grompp -f mdp/em.mdp -c em/{structureName}.gro -p {structureName}.top -o em/{structureName}.tpr -po em/{structureName}.mdp -maxwarn 2")
+        self.run_command(
+            f"gmx grompp "
+            f"-f {self.path_simulation_folder}/mdp/em.mdp "
+            f"-c {self.path_simulation_folder}/em/{structureName}.gro "
+            f"-p {self.path_simulation_folder}/{structureName}.top "
+            f"-o {self.path_simulation_folder}/em/{structureName}.tpr "
+            f"-po {self.path_simulation_folder}/em/{structureName}.mdp "
+            f"-maxwarn 2")
 
-        if (simulation_parameter["c_magnesium_ions[mol/l]"] > 0):
-            run_command_win(
-                f"gmx genion -s em/{structureName}.tpr -o em/{structureName}.gro -p {structureName}.top -nname Cl -pname MG -pq 2 -conc {simulation_parameter['c_magnesium_ions[mol/l]']}",
+        if simulation_parameter["c_magnesium_ions[mol/l]"] > 0:
+            self.run_command_win(
+                f"gmx genion "
+                f"-s {self.path_simulation_folder}/em/{structureName}.tpr "
+                f"-o {self.path_simulation_folder}/em/{structureName}.gro "
+                f"-p {self.path_simulation_folder}/{structureName}.top "
+                f"-nname Cl "
+                f"-pname MG "
+                f"-pq 2 "
+                f"-conc {simulation_parameter['c_magnesium_ions[mol/l]']}",
                 b"4\n")
 
-            run_command(
-                f"gmx grompp -f mdp/em.mdp -c em/{structureName}.gro -p {structureName}.top -o em/{structureName}.tpr -po em/{structureName}.mdp -maxwarn 2")
+            self.run_command(
+                f"gmx grompp "
+                f"-f {self.path_simulation_folder}/mdp/em.mdp "
+                f"-c {self.path_simulation_folder}/em/{structureName}.gro "
+                f"-p {self.path_simulation_folder}/{structureName}.top "
+                f"-o {self.path_simulation_folder}/em/{structureName}.tpr "
+                f"-po {self.path_simulation_folder}/em/{structureName}.mdp "
+                f"-maxwarn 2")
 
-        run_command(
-            f"gmx mdrun -v -s em/{structureName}.tpr -c em/{structureName}.gro -o em/{structureName}.trr -e em/{structureName}.edr -g em/{structureName}.log")
+        self.run_command(
+            f"gmx mdrun -v "
+            f"-s {self.path_simulation_folder}/em/{structureName}.tpr "
+            f"-c {self.path_simulation_folder}/em/{structureName}.gro "
+            f"-o {self.path_simulation_folder}/em/{structureName}.trr "
+            f"-e {self.path_simulation_folder}/em/{structureName}.edr "
+            f"-g {self.path_simulation_folder}/em/{structureName}.log")
         os.chdir(working_dir_path)
 
     def run_simulation_steps(self, structureFile, dir, working_dir_path):
