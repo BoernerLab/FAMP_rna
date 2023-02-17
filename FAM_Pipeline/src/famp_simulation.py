@@ -80,39 +80,39 @@ class MDSimulation:
         return structure_name
 
     def change_temperature_in_nvt(self, temperature):
-        temp_in_K = self.degree_to_kelvin(temperature)
-        for dir in ["nvt","md0"]:
+        temp_in_k = self.degree_to_kelvin(temperature)
+        for source_dir in ["nvt", "md0"]:
             content = []
-            with open(f"{self.path_simulation_folder}/mdp/{dir}.mdp", 'r') as f:
+            with open(f"{self.path_simulation_folder}/mdp/{source_dir}.mdp", 'r') as f:
                 for i, line in enumerate(f):
                     line = line.strip()
                     if line.startswith(('ref_t', 'gen_temp')):
                         # print(re.sub(pattern = "[0-9]+", repl = str(temp_in_K), string=line))
-                        content.append(re.sub(pattern="[0-9]+", repl=str(temp_in_K), string=line))
+                        content.append(re.sub(pattern="[0-9]+", repl=str(temp_in_k), string=line))
                     else:
                         content.append(line)
 
             # print(content)
-            with open(f"{self.path_simulation_folder}/mdp/{dir}.mdp", 'w') as f:
-                for l in content:
-                    f.write("%s\n" % l)
+            with open(f"{self.path_simulation_folder}/mdp/{source_dir}.mdp", 'w') as f:
+                for line in content:
+                    f.write("%s\n" % line)
 
     def change_temperature_in_npt(self, temperature):
-        temp_in_K = self.degree_to_kelvin(temperature)
+        temp_in_k = self.degree_to_kelvin(temperature)
         content = []
         with open(f"{self.path_simulation_folder}/mdp/npt.mdp", 'r') as f:
             for i, line in enumerate(f):
                 line = line.strip()
                 if line.startswith('ref_t'):
                     # print(re.sub(pattern = "[0-9]+", repl = str(temp_in_K), string=line))
-                    content.append(re.sub(pattern="[0-9]+", repl=str(temp_in_K), string=line))
+                    content.append(re.sub(pattern="[0-9]+", repl=str(temp_in_k), string=line))
                 else:
                     content.append(line)
 
         # print(content)
         with open(f"{self.path_simulation_folder}/mdp/npt.mdp", 'w') as f:
-            for l in content:
-                f.write("%s\n" % l)
+            for line in content:
+                f.write("%s\n" % line)
 
     def change_sim_time_in_md0(self, time):
         simulation_steps = self.sim_time_to_steps(time)
@@ -127,15 +127,16 @@ class MDSimulation:
                     content.append(line)
 
         with open(f"{self.path_simulation_folder}/mdp/md0.mdp", 'w') as f:
-            for l in content:
-                f.write("%s\n" % l)
+            for line in content:
+                f.write("%s\n" % line)
 
     def copy_files_to_sim_dir(self):
         src_folder = "./scripts/gromacs"
         dst_folder = self.working_dir + f"/{self.md_parameter['simulation_name']}"
 
         if os.path.exists(dst_folder) and os.path.isdir(dst_folder):
-            print("MD run already exists. To make a new Simulation change the Name od the Simulation in the MD parameter")
+            print(
+                "MD run already exists. To make a new Simulation change the Name od the Simulation in the MD parameter")
         else:
             self.make_result_dir(self.md_parameter['simulation_name'])
 
@@ -177,8 +178,8 @@ class MDSimulation:
 
         :return: none
         """
-        #os.chdir(working_dir_path + f"/{dir}")
-        #print(os.getcwd())
+        # os.chdir(working_dir_path + f"/{dir}")
+        # print(os.getcwd())
         self.make_result_dir(f"{self.md_parameter['simulation_name']}/em")
         self.run_command_win(
             f"gmx pdb2gmx "
@@ -266,11 +267,6 @@ class MDSimulation:
 
         :return: None
         """
-        #os.chdir(working_dir_path + f"/{dir}")
-        #print(os.getcwd())
-        #structureName = structureFile[:-4]
-        structureName = 'input'
-
         self.make_result_dir(f"{self.md_parameter['simulation_name']}/nvt")
 
         self.run_command(
@@ -333,23 +329,7 @@ class MDSimulation:
             f"-e {self.path_simulation_folder}/md0/{self.input_structure_name}.edr "
             f"-g {self.path_simulation_folder}/md0/{self.input_structure_name}.log")
 
-        #os.chdir(working_dir_path)
-
-    def reduce_center_xtc(self, md_dir):
-        """
-        Reduce the trajectory to the RNA and center it in the simulation Box.
-
-        At first a ndx file of the RNA is created. Here are only atom id's written belonging to RNA molecules. Then two bash commands are called by python subprocess. These two commands using gmx trjconv to convert trajectories and to produce a pdb file of the frst state with the given ndx file.
-
-        :param md_dir: Path of the MD run directory
-        :return: none
-        """
-        self.make_ndx_of_rna(f"{md_dir}/md0/input.gro", f"{md_dir}/analysis/Index_Files/RNA.ndx")
-        md_dir = f"{os.getcwd()}/{md_dir}"
-        self.run_command(
-            f"gmx trjconv -f {md_dir}/md0/input.xtc -s {md_dir}/md0/input.tpr -o {md_dir}/md0/input_centered.xtc -n {md_dir}_analysis/Index_Files/RNA.ndx -pbc mol -center")
-        self.run_command(
-            f"gmx trjconv -f {md_dir}/md0/input.xtc -s {md_dir}/md0/input.tpr -o {md_dir}/md0/input_s1.pdb -n {md_dir}_analysis/Index_Files/RNA.ndx -pbc mol -center -b 1 -e 10")
+        # os.chdir(working_dir_path)
 
 
 if __name__ == '__main__':
@@ -367,6 +347,5 @@ if __name__ == '__main__':
 
     hairpin_labeled.prepare_new_md_run()
     hairpin_labeled.update_parameter()
-    #hairpin_labeled.solvate_molecule()
+    hairpin_labeled.solvate_molecule()
     hairpin_labeled.run_simulation_steps()
-
