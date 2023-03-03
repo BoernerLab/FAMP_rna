@@ -242,6 +242,18 @@ class DataAnalysis:
         self.run_command(
             f"gmx trjconv -f {md_dir}/md0/{sim_name}.xtc -s {md_dir}/md0/{sim_name}.tpr -o {md_dir}/md0/{sim_name}_s1.pdb -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc mol -center -b 1 -e 10")
 
+    def export_pdb_trajectory(self, time_steps):
+        """
+        Exports a pdb trajectory from a GROMACS simulation file.
+
+        :params: time_steps: step width for exporting states.
+        :return: none
+        """
+        sim_name = self.analysis_parameter['input_structure_name']
+        self.run_command(
+            f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_traj.pdb -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc mol -dt {time_steps} -center")
+
+
     def make_data_analysis_results_dirs(self):
         """
         Function to prepare a directory for the MD data analysis.
@@ -267,7 +279,7 @@ class DataAnalysis:
         shutil.copy(src_folder + f"/{sim_name}_centered.xtc", dst_folder + f"/{sim_name}_centered.xtc")
         shutil.copy(src_folder + f"/{sim_name}.gro", dst_folder + f"/{sim_name}.gro")
         shutil.copy(src_folder + f"/{sim_name}.tpr", dst_folder + f"/{sim_name}.tpr")
-        shutil.copy(src_folder + f"/{sim_name}.pdb", dst_folder + f"/{sim_name}.pdb")
+        shutil.copy(src_folder + f"/{sim_name}_s1.pdb", dst_folder + f"/{sim_name}_s1.pdb")
 
     # -----------------------------------------------------------------------------------------------------------------------
 
@@ -316,8 +328,6 @@ class DataAnalysis:
             f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_unlabeled_s1.pdb -n {self.analysis_dir}/Index_Files/RNA_without_Dyes_python.ndx -pbc mol -center -b 1 -e 10")
 
         self.rewrite_atoms_after_unlabeling()
-
-
 
     def write_rkappa_file_from_macv(self):
         pass
@@ -472,19 +482,21 @@ class DataAnalysis:
 
 if __name__ == '__main__':
     analysis_paras = {
-        "simulation_name": "hairpin_labeled",
-        "input_structure_name": "Test",
+        "simulation_name": "TLR_ALIGNED_SORTED",
+        "input_structure_name": "TLR_ALIGNED_SORTED",
         "mean_donor_atom": 2126,
         "donor_dipole": [2123, 2155],
         "mean_acceptor_atom": 304,
-        "acceptor_dipole": [311, 334],
+        "acceptor_dipole": [311, 334]
     }
 
     filter_par = [["10", "C14"], ["10", "C2"], ["10", "C32"], ["65", "C14"], ["65", "C2"], ["65", "C11"]]
 
     print(os.getcwd())
     md_analysis = DataAnalysis(working_dir=f"{os.getcwd()}/data",
-                               path_sim_results=f"{os.getcwd()}/data/hairpin_labeled",
+                               path_sim_results=f"{os.getcwd()}/data/tlr_gaaa_equilibration",
                                analysis_parameter=analysis_paras)
-    md_analysis.reduce_center_xtc()
-    md_analysis.copy_files_to_raw()
+
+    #md_analysis.make_data_analysis_results_dirs()
+    #md_analysis.reduce_center_xtc()
+    md_analysis.export_pdb_trajectory(10)
