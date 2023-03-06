@@ -334,15 +334,15 @@ class MDSimulation:
 
 if __name__ == '__main__':
     simulation_parameter = {
-        "simulation_name": "hairpin_labeled",
-        "c_magnesium_ions[mol/l]": 0.00,
-        "simulation_time[ns]": 0.3,
+        "simulation_name": "tlr_gaaa_equilibration",
+        "c_magnesium_ions[mol/l]": 0.02,
+        "simulation_time[ns]": 0.7,
         "temperature[°C]": 25,
         "dist_to_box[nm]": "1",
     }
     print(os.getcwd())
-    hairpin_labeled = MDSimulation(working_dir=f"{os.getcwd()}/data",
-                                   file_path_input=f"{os.getcwd()}/data/rosetta_results/silent_out.pdb",
+    hairpin_labeled = MDSimulation(working_dir=f"/home/felix/Documents/md_tlr_equilibration",
+                                   file_path_input=f"/home/felix/Documents/md_tlr_equilibration/TLR_ALIGNED_SORTED.pdb",
                                    md_parameter=simulation_parameter)
 
     hairpin_labeled.prepare_new_md_run()

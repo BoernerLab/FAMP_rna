@@ -154,7 +154,7 @@ class Modeling:
                 f"-secstruct '{secondary_structure[0]}' " \
                 f"-silent {self.working_dir}/rosetta_results/silent_out.out " \
                 f"-minimize_rna {self.modeling_parameter['minimize_rna']} " \
-                f"-cycles {self.modeling_parameter['cycles']}"
+                f"-cycles {self.modeling_parameter['cycles']}" \
 
         return flags
 
@@ -198,16 +198,18 @@ class Modeling:
 
 if __name__ == '__main__':
     rosetta_parameter = {
-        "path_to_rosetta": "rna_denovo.default.macosclangrelease",
-        "nstruct": 3,
-        "fasta": "RNA_Hairpin.fasta",
+        "path_to_rosetta": "rna_denovo.default.linuxgccrelease",
+        "nstruct": 100,
+        "fasta": "rna_tlr_sequence.fasta",
         "minimize_rna": True,
-        "cycles": 20
+        "cycles": 2000
     }
 
     print(os.getcwd())
     params = {}
-    test = Modeling(f"{os.getcwd()}/data", f"{os.getcwd()}/data/RNA_Hairpin.fasta", rosetta_parameter)
+    test = Modeling(working_dir=f"{os.getcwd()}/data",
+                    file_path_sequence=f"{os.getcwd()}/data/rna_tlr_sequence.fasta",
+                    modeling_parameter=rosetta_parameter)
     test.predict_2d_structure()
-    test.predict_3d_structure(f"{os.getcwd()}/data/secondary_prediction/dot_bracket.secstruct")
-    test.extract_pdb(5)
+    test.predict_3d_structure(path_2d_structure_file=f"{os.getcwd()}/data/secondary_prediction/dot_bracket.secstruct")
+    test.extract_pdb(1000)
