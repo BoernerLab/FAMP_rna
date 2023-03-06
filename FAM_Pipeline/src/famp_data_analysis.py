@@ -433,7 +433,7 @@ class DataAnalysis:
         df.to_csv(f"{self.analysis_dir}/fluorburst/{file_name}", sep='\t', header=False, index=False)
 
         for i in range(0, 13):
-            self.line_prepender(file_name, "#")
+            self.line_prepender(f"{self.analysis_dir}/fluorburst/{file_name}", "#")
 
     def write_rkappa_file_from_dyes(self, don_dipole, acc_dipole, mean_don_acc):
         """
@@ -460,6 +460,7 @@ class DataAnalysis:
 
     def generate_r_kappa_from_dyes(self):
         self.reduce_gro_file()
+        self.make_dir(f"{self.analysis_dir}/fluorburst")
         u = mda.Universe(f"{self.analysis_dir}/raw/{self.input_structure_name}_reduced.gro",
                          f"{self.analysis_dir}/raw/{self.input_structure_name}_centered.xtc")
 
@@ -482,8 +483,8 @@ class DataAnalysis:
 
 if __name__ == '__main__':
     analysis_paras = {
-        "simulation_name": "TLR_ALIGNED_SORTED",
-        "input_structure_name": "TLR_ALIGNED_SORTED",
+        "simulation_name": "cryo_em_model_labeled",
+        "input_structure_name": "input",
         "mean_donor_atom": 2126,
         "donor_dipole": [2123, 2155],
         "mean_acceptor_atom": 304,
@@ -493,11 +494,12 @@ if __name__ == '__main__':
     filter_par = [["10", "C14"], ["10", "C2"], ["10", "C32"], ["65", "C14"], ["65", "C2"], ["65", "C11"]]
 
     print(os.getcwd())
-    md_analysis = DataAnalysis(working_dir=f"{os.getcwd()}/data",
-                               path_sim_results=f"{os.getcwd()}/data/tlr_gaaa_equilibration",
+    md_analysis = DataAnalysis(working_dir=f"/home/felix/Documents/md_BTL_Ros_PyM_04_04/md_CryoEM_without_restraints_labeled",
+                               path_sim_results=f"/home/felix/Documents/md_BTL_Ros_PyM_04_04/md_CryoEM_without_restraints_labeled",
                                analysis_parameter=analysis_paras)
 
     #md_analysis.make_data_analysis_results_dirs()
-    #md_analysis.reduce_center_xtc()
-    #md_analysis.export_pdb_trajectory(10)
+    # md_analysis.reduce_center_xtc()
+    #md_analysis.export_pdb_trajectory(1000)
+    md_analysis.generate_r_kappa_from_dyes()
 
