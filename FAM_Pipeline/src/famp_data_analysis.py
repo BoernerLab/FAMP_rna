@@ -499,4 +499,5 @@ if __name__ == '__main__':
 
     #md_analysis.make_data_analysis_results_dirs()
     #md_analysis.reduce_center_xtc()
-    md_analysis.export_pdb_trajectory(10)
+    #md_analysis.export_pdb_trajectory(10)
+
