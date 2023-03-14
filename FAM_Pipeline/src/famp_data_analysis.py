@@ -367,16 +367,17 @@ class DataAnalysis:
         s_frames = self.get_selected_frames()
         selected_frames = range(0, s_frames[0], s_frames[1])
         print(s_frames)
-        fret = ft.cloud.pipeline_frames(self.md_traj, 'Cy5-10-C5', "Cy3-65-O3'", self.macv_label_pars, selected_frames, 'Cy3-Cy5')
+        fret = ft.cloud.pipeline_frames(self.md_traj, 'Cy3-10-C5', 'Cy5-45-C5', self.macv_label_pars, selected_frames, 'Cy3-Cy5')
         ft.cloud.save_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_macv.pkl', fret)
         return fret
 
     def load_macv(self):
         fret = ft.cloud.load_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_macv.pkl')
+        self.fret_macv = fret
         return fret
 
     def write_rkappa_file_from_macv(self):
-        fret_traj = ft.cloud.Trajectory(self.fret_macv, timestep=self.fret_macv.timestep, kappasquare=0.66)
+        fret_traj = ft.cloud.Trajectory(self.fret_macv, timestep=self.md_traj.timestep, kappasquare=0.66)
         fret_traj.save_traj(f'{self.analysis_dir}/macv/R_kappa_ACV.dat', format='txt', R_kappa_only=True, units='nm',
                             header=False)
         fret_traj.dataframe.head()
@@ -542,17 +543,17 @@ class DataAnalysis:
 
 if __name__ == '__main__':
     analysis_paras = {
-        "simulation_name": "cryo_em_model_labeled",
-        "input_structure_name": "input",
-        "mean_donor_atom": 2126,
-        "donor_dipole": [2123, 2155],
-        "mean_acceptor_atom": 304,
-        "acceptor_dipole": [311, 334]
+        "simulation_name": "md_tlr_longrun",
+        "input_structure_name": "TLR_ALIGNED_SORTED_s1_labeled",
+        "mean_donor_atom": 303,
+        "donor_dipole": [332, 309],
+        "mean_acceptor_atom": 1469,
+        "acceptor_dipole": [1499, 1476]
     }
 
     labels = {"Position":
-                  {"Cy5-10-C5":
-                       {"attach_id": 310,
+                  {"Cy5-45-C5":
+                       {"attach_id": 1406,
                         "mol_selection": "all",
                         "linker_length": 21,
                         "linker_width": 3.5,
@@ -564,17 +565,17 @@ if __name__ == '__main__':
                         "use_LabelLib": False,
                         "grid_spacing": 1.0,
                         "simulation_type": "AV3",
-                        "state": (int, 1),
-                        "frame_mdtraj": (int, 0),
-                        "contour_level_AV": ((int, float), 0),
-                        "contour_level_CV": ((int, float), 0.7),
-                        "b_factor": (int, 100),
-                        "gaussian_resolution": (int, 2),
-                        "grid_buffer": ((int, float), 2.0),
-                        "transparent_AV": (bool, True)
+                        "state": 1,
+                        "frame_mdtraj":  0,
+                        "contour_level_AV":  0,
+                        "contour_level_CV":  0.7,
+                        "b_factor":  100,
+                        "gaussian_resolution": 2,
+                        "grid_buffer": 2.0,
+                        "transparent_AV":  True
                         },
-                   "Cy3-65-O3'":
-                       {"attach_id": 2052,
+                   "Cy3-10-C5":
+                       {"attach_id": 310,
                         "mol_selection": "all",
                         "linker_length": 20.5,
                         "linker_width": 3.5,
@@ -583,21 +584,21 @@ if __name__ == '__main__':
                         "dye_radius3": 1.5,
                         "cv_fraction": 0.25,
                         "cv_thickness": 3,
-                         "use_LabelLib": False,
+                        "use_LabelLib": False,
                         "grid_spacing": 1.0,
                         "simulation_type": "AV3",
-                        "state": (int, 1),
-                        "frame_mdtraj": (int, 0),
-                        "contour_level_AV": ((int, float), 0),
-                        "contour_level_CV": ((int, float), 0.7),
-                        "b_factor": (int, 100),
-                        "gaussian_resolution": (int, 2),
-                        "grid_buffer": ((int, float), 2.0),
-                        "transparent_AV": (bool, True)},
+                        "state": 1,
+                        "frame_mdtraj":  0,
+                        "contour_level_AV": 0,
+                        "contour_level_CV":  0.7,
+                        "b_factor": 100,
+                        "gaussian_resolution":  2,
+                        "grid_buffer":  2.0,
+                        "transparent_AV": True},
                    },
               "Distance": {"Cy3-Cy5":
                                {"R0": 54,
-                                "n_dist": (int, 10 ** 6)}
+                                "n_dist": 10 ** 6}
                            }
               }
 
@@ -605,14 +606,20 @@ if __name__ == '__main__':
 
     print(os.getcwd())
     md_analysis = DataAnalysis(
-        working_dir=f"/home/felix/Documents/md_BTL_Ros_PyM_04_04/md_CryoEM_without_restraints_labeled",
-        path_sim_results=f"/home/felix/Documents/md_BTL_Ros_PyM_04_04/md_CryoEM_without_restraints_labeled",
+        working_dir=f"/home/felix/Documents/TLR_Mirko",
+        path_sim_results=f"/home/felix/Documents/TLR_Mirko/md_tlr_longrun",
         analysis_parameter=analysis_paras,
         macv_label_pars=labels)
 
-    # md_analysis.make_data_analysis_results_dirs()
-    # md_analysis.reduce_center_xtc()
-    # md_analysis.export_pdb_trajectory(1000)
-    # md_analysis.generate_r_kappa_from_dyes()
-    md_analysis.genarate_rkappa_file_from_macv()
+    #md_analysis.make_data_analysis_results_dirs()
+    #md_analysis.export_pdb_trajectory(10000)
+    md_analysis.generate_r_kappa_from_dyes()
+    #md_analysis.make_dir(f"{md_analysis.analysis_dir}/macv")
+    #md_analysis.remove_dyes_from_trajectory()
+    #md_analysis.rewrite_atoms_after_unlabeling()
+    #md_analysis.set_md_traj()
+    #md_analysis.fret_macv = md_analysis.calculate_macv()
+    #md_analysis.load_macv()
+    #md_analysis.write_rkappa_file_from_macv()
+    #md_analysis.genarate_rkappa_file_from_macv()
 

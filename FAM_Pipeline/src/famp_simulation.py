@@ -189,7 +189,7 @@ class MDSimulation:
             f"-i {self.path_simulation_folder}/em/{self.input_structure_name}.itp "
             f"-missing "
             f"-ignh",
-            b"1\n 3\n")
+            b"15\n 3\n")
 
         self.run_command(f"gmx editconf "
                          f"-f {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
@@ -334,15 +334,15 @@ class MDSimulation:
 
 if __name__ == '__main__':
     simulation_parameter = {
-        "simulation_name": "tlr_gaaa_equilibration",
+        "simulation_name": "md_tlr_longrun",
         "c_magnesium_ions[mol/l]": 0.02,
-        "simulation_time[ns]": 0.7,
+        "simulation_time[ns]": 1000,
         "temperature[°C]": 25,
-        "dist_to_box[nm]": "1",
+        "dist_to_box[nm]": "1.25",
     }
     print(os.getcwd())
-    hairpin_labeled = MDSimulation(working_dir=f"/home/felix/Documents/md_tlr_equilibration",
-                                   file_path_input=f"/home/felix/Documents/md_tlr_equilibration/TLR_ALIGNED_SORTED.pdb",
+    hairpin_labeled = MDSimulation(working_dir=f"/home/felix/Documents/TLR_Mirko",
+                                   file_path_input=f"/home/felix/Documents/TLR_Mirko/TLR_ALIGNED_SORTED_s1_labeled.pdb",
                                    md_parameter=simulation_parameter)
 
     hairpin_labeled.prepare_new_md_run()
