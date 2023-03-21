@@ -274,6 +274,18 @@ class DataAnalysis:
         self.run_command(
             f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_traj.pdb -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc mol -dt {time_steps} -center")
 
+    def export_range_pdb_trajectory(self, time_steps: int, traj_range: list):
+        """
+        Exports a pdb trajectory from a GROMACS simulation file.
+
+        :params: time_steps: step width for exporting states.
+        :return: none
+        """
+        sim_name = self.analysis_parameter['input_structure_name']
+        self.run_command(
+            f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_traj_{traj_range[0]}_{traj_range[1]}.pdb -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc mol -dt {time_steps} -b {traj_range[0]} -e {traj_range[1]} -center")
+
+
     def make_data_analysis_results_dirs(self):
         """
         Function to prepare a directory for the MD data analysis.
@@ -354,7 +366,7 @@ class DataAnalysis:
         step = self.md_traj.timestep
         max_time = round(time / step, 0)
         time_step = 1
-        ts = max_time / 1000
+        ts = max_time / 10000
         if ts >= 1:
             time_step = round(ts, 0)
         else:
@@ -367,17 +379,19 @@ class DataAnalysis:
         s_frames = self.get_selected_frames()
         selected_frames = range(0, s_frames[0], s_frames[1])
         print(s_frames)
-        fret = ft.cloud.pipeline_frames(self.md_traj, 'Cy3-10-C5', 'Cy5-45-C5', self.macv_label_pars, selected_frames, 'Cy3-Cy5')
-        ft.cloud.save_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_macv.pkl', fret)
+        fret = ft.cloud.pipeline_frames(self.md_traj, "Cy3-65-O3'", 'Cy5-10-C5', self.macv_label_pars, selected_frames, 'Cy3-Cy5')
+        ft.cloud.save_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_macv_10000s.pkl', fret)
         return fret
 
     def load_macv(self):
         fret = ft.cloud.load_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_macv.pkl')
         self.fret_macv = fret
+        print(len(fret))
         return fret
 
     def write_rkappa_file_from_macv(self):
-        fret_traj = ft.cloud.Trajectory(self.fret_macv, timestep=self.md_traj.timestep, kappasquare=0.66)
+        s_frames = self.get_selected_frames()
+        fret_traj = ft.cloud.Trajectory(self.fret_macv, timestep=s_frames[1]*int(self.md_traj.timestep), kappasquare=0.66)
         fret_traj.save_traj(f'{self.analysis_dir}/macv/R_kappa_ACV.dat', format='txt', R_kappa_only=True, units='nm',
                             header=False)
         fret_traj.dataframe.head()
@@ -485,10 +499,10 @@ class DataAnalysis:
         :param dipole: Coordinates of dipole: [[[x,y,z]][[x,y,z]]]
         :return: none
         """
-        time = np.arange(0, len(dipole[0]) + 9, 10, dtype=int)
+        time = np.arange(0, len(dipole[0]) + 9, 1, dtype=int)
         df = pd.DataFrame(list(
-            zip(time, dipole[0][:, 0], dipole[0][:, 1], dipole[0][:, 2], dipole[1][:, 0], dipole[1][:, 1],
-                dipole[1][:, 1])))
+            zip(time*10, dipole[0][:, 0], dipole[0][:, 1], dipole[0][:, 2], dipole[1][:, 0], dipole[1][:, 1],
+                dipole[1][:, 2])))
         print(len(df[0]))
         df.to_csv(f"{self.analysis_dir}/fluorburst/{file_name}", sep='\t', header=False, index=False)
 
@@ -509,11 +523,11 @@ class DataAnalysis:
         :return: none
         """
         kappa_2 = self.calculate_kappa_2(don_dipole, acc_dipole)
-        time = np.arange(0, len(don_dipole[0]) + 9, 10, dtype=int)
+        time = np.arange(0, len(don_dipole[0]) + 9, 1, dtype=int)
         # print(len(time))
         rda_md = self.calculate_inter_dye_distance(mean_don_acc[0], mean_don_acc[1])
         # Datei generieren
-        df = pd.DataFrame(list(zip(time, rda_md, kappa_2)))
+        df = pd.DataFrame(list(zip(time*10, rda_md, kappa_2)))
         print(len(df[0]))
         df.to_csv(f'{self.analysis_dir}/fluorburst/rkappa.dat', sep='\t', header=False, index=False)
         return df
@@ -543,24 +557,24 @@ class DataAnalysis:
 
 if __name__ == '__main__':
     analysis_paras = {
-        "simulation_name": "md_tlr_longrun",
-        "input_structure_name": "TLR_ALIGNED_SORTED_s1_labeled",
-        "mean_donor_atom": 303,
-        "donor_dipole": [332, 309],
-        "mean_acceptor_atom": 1469,
-        "acceptor_dipole": [1499, 1476]
+        "simulation_name": "input",
+        "input_structure_name": "input",
+        "mean_donor_atom": 2126,
+        "donor_dipole": [2123, 2155],
+        "mean_acceptor_atom": 304,
+        "acceptor_dipole": [311, 334]
     }
 
     labels = {"Position":
-                  {"Cy5-45-C5":
-                       {"attach_id": 1406,
+                  {"Cy5-10-C5":
+                       {"attach_id": 310,
                         "mol_selection": "all",
                         "linker_length": 21,
                         "linker_width": 3.5,
                         "dye_radius1": 9.5,
                         "dye_radius2": 3,
                         "dye_radius3": 1.5,
-                        "cv_fraction": 0.25,
+                        "cv_fraction": 0.28,
                         "cv_thickness": 3,
                         "use_LabelLib": False,
                         "grid_spacing": 1.0,
@@ -574,8 +588,8 @@ if __name__ == '__main__':
                         "grid_buffer": 2.0,
                         "transparent_AV":  True
                         },
-                   "Cy3-10-C5":
-                       {"attach_id": 310,
+                   "Cy3-65-O3'":
+                       {"attach_id": 2052,
                         "mol_selection": "all",
                         "linker_length": 20.5,
                         "linker_width": 3.5,
@@ -605,21 +619,23 @@ if __name__ == '__main__':
     filter_par = [["10", "C14"], ["10", "C2"], ["10", "C32"], ["65", "C14"], ["65", "C2"], ["65", "C11"]]
 
     print(os.getcwd())
-    md_analysis = DataAnalysis(
-        working_dir=f"/home/felix/Documents/TLR_Mirko",
-        path_sim_results=f"/home/felix/Documents/TLR_Mirko/md_tlr_longrun",
-        analysis_parameter=analysis_paras,
-        macv_label_pars=labels)
+    md_analysis = DataAnalysis(working_dir= "/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete",
+                               path_sim_results=f"/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete/BTL_cryoEM_unrestraint",
+                               analysis_parameter=analysis_paras, macv_label_pars=labels)
+
+
 
     #md_analysis.make_data_analysis_results_dirs()
     #md_analysis.export_pdb_trajectory(10000)
-    md_analysis.generate_r_kappa_from_dyes()
+    #md_analysis.export_range_pdb_trajectory(100, [10, 20000])
+    #md_analysis.make_ndx_of_rna("/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete/BTL_CEM_Dist_Rest/analysis/raw/cryo_em_model_labeled.gro",
+                                #"/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete/BTL_CEM_Dist_Rest/analysis/Index_Files/RNA.ndx")
+    #md_analysis.generate_r_kappa_from_dyes()
     #md_analysis.make_dir(f"{md_analysis.analysis_dir}/macv")
     #md_analysis.remove_dyes_from_trajectory()
     #md_analysis.rewrite_atoms_after_unlabeling()
-    #md_analysis.set_md_traj()
-    #md_analysis.fret_macv = md_analysis.calculate_macv()
+    md_analysis.set_md_traj()
+    md_analysis.fret_macv = md_analysis.calculate_macv()
     #md_analysis.load_macv()
-    #md_analysis.write_rkappa_file_from_macv()
+    md_analysis.write_rkappa_file_from_macv()
     #md_analysis.genarate_rkappa_file_from_macv()
-
