@@ -245,7 +245,7 @@ class DataAnalysis:
 
     # -----------------------------------------------------------------------------------------------------------------------
 
-    def reduce_center_xtc(self):
+    def reduce_center_xtc(self, pbc_method="mol"):
         """
         Reduce the trajectory to the RNA and center it in the simulation Box.
 
@@ -259,7 +259,7 @@ class DataAnalysis:
         md_dir = self.path_sim_results
         self.make_ndx_of_rna(f"{md_dir}/md0/{sim_name}.gro", f"{self.analysis_dir}/Index_Files/RNA.ndx")
         self.run_command(
-            f"gmx trjconv -f {md_dir}/md0/{sim_name}.xtc -s {md_dir}/md0/{sim_name}.tpr -o {md_dir}/md0/{sim_name}_centered.xtc -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc mol -center")
+            f"gmx trjconv -f {md_dir}/md0/{sim_name}.xtc -s {md_dir}/md0/{sim_name}.tpr -o {md_dir}/md0/{sim_name}_centered.xtc -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc {pbc_method} -center")
         self.run_command(
             f"gmx trjconv -f {md_dir}/md0/{sim_name}.xtc -s {md_dir}/md0/{sim_name}.tpr -o {md_dir}/md0/{sim_name}_s1.pdb -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc mol -center -b 1 -e 10")
 
@@ -285,8 +285,7 @@ class DataAnalysis:
         self.run_command(
             f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_traj_{traj_range[0]}_{traj_range[1]}.pdb -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc mol -dt {time_steps} -b {traj_range[0]} -e {traj_range[1]} -center")
 
-
-    def make_data_analysis_results_dirs(self):
+    def make_data_analysis_results_dirs(self, pbc_method="mol"):
         """
         Function to prepare a directory for the MD data analysis.
 
@@ -300,7 +299,7 @@ class DataAnalysis:
         self.make_dir(f"{analysis_dir}/raw")
         self.make_dir(f"{analysis_dir}/Images")
         self.make_dir(f"{analysis_dir}/Index_Files")
-        self.reduce_center_xtc()
+        self.reduce_center_xtc(pbc_method=pbc_method)
         self.copy_files_to_raw()
 
     def copy_files_to_raw(self):
@@ -379,7 +378,8 @@ class DataAnalysis:
         s_frames = self.get_selected_frames()
         selected_frames = range(0, s_frames[0], s_frames[1])
         print(s_frames)
-        fret = ft.cloud.pipeline_frames(self.md_traj, "Cy3-65-O3'", 'Cy5-10-C5', self.macv_label_pars, selected_frames, 'Cy3-Cy5')
+        fret = ft.cloud.pipeline_frames(self.md_traj, "Cy3-10-C5", 'Cy5-45-C5', self.macv_label_pars, selected_frames,
+                                        'Cy3-Cy5')
         ft.cloud.save_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_macv_10000s.pkl', fret)
         return fret
 
@@ -391,7 +391,8 @@ class DataAnalysis:
 
     def write_rkappa_file_from_macv(self):
         s_frames = self.get_selected_frames()
-        fret_traj = ft.cloud.Trajectory(self.fret_macv, timestep=s_frames[1]*int(self.md_traj.timestep), kappasquare=0.66)
+        fret_traj = ft.cloud.Trajectory(self.fret_macv, timestep=s_frames[1] * int(self.md_traj.timestep),
+                                        kappasquare=0.66)
         fret_traj.save_traj(f'{self.analysis_dir}/macv/R_kappa_ACV.dat', format='txt', R_kappa_only=True, units='nm',
                             header=False)
         fret_traj.dataframe.head()
@@ -501,7 +502,7 @@ class DataAnalysis:
         """
         time = np.arange(0, len(dipole[0]) + 9, 1, dtype=int)
         df = pd.DataFrame(list(
-            zip(time*10, dipole[0][:, 0], dipole[0][:, 1], dipole[0][:, 2], dipole[1][:, 0], dipole[1][:, 1],
+            zip(time * 10, dipole[0][:, 0], dipole[0][:, 1], dipole[0][:, 2], dipole[1][:, 0], dipole[1][:, 1],
                 dipole[1][:, 2])))
         print(len(df[0]))
         df.to_csv(f"{self.analysis_dir}/fluorburst/{file_name}", sep='\t', header=False, index=False)
@@ -527,7 +528,7 @@ class DataAnalysis:
         # print(len(time))
         rda_md = self.calculate_inter_dye_distance(mean_don_acc[0], mean_don_acc[1])
         # Datei generieren
-        df = pd.DataFrame(list(zip(time*10, rda_md, kappa_2)))
+        df = pd.DataFrame(list(zip(time * 10, rda_md, kappa_2)))
         print(len(df[0]))
         df.to_csv(f'{self.analysis_dir}/fluorburst/rkappa.dat', sep='\t', header=False, index=False)
         return df
@@ -557,41 +558,19 @@ class DataAnalysis:
 
 if __name__ == '__main__':
     analysis_paras = {
-        "simulation_name": "input",
-        "input_structure_name": "input",
-        "mean_donor_atom": 2126,
-        "donor_dipole": [2123, 2155],
-        "mean_acceptor_atom": 304,
-        "acceptor_dipole": [311, 334]
+        "simulation_name": "m_tlr_ub",
+        "input_structure_name": "m_tlr_ub",
+        "mean_donor_atom": 304,
+        "donor_dipole": [333, 310],
+        "mean_acceptor_atom": 1471,
+        "acceptor_dipole": [1501, 1478]
     }
 
     labels = {"Position":
-                  {"Cy5-10-C5":
+                  {"Cy3-10-C5":
                        {"attach_id": 310,
                         "mol_selection": "all",
-                        "linker_length": 21,
-                        "linker_width": 3.5,
-                        "dye_radius1": 9.5,
-                        "dye_radius2": 3,
-                        "dye_radius3": 1.5,
-                        "cv_fraction": 0.28,
-                        "cv_thickness": 3,
-                        "use_LabelLib": False,
-                        "grid_spacing": 1.0,
-                        "simulation_type": "AV3",
-                        "state": 1,
-                        "frame_mdtraj":  0,
-                        "contour_level_AV":  0,
-                        "contour_level_CV":  0.7,
-                        "b_factor":  100,
-                        "gaussian_resolution": 2,
-                        "grid_buffer": 2.0,
-                        "transparent_AV":  True
-                        },
-                   "Cy3-65-O3'":
-                       {"attach_id": 2052,
-                        "mol_selection": "all",
-                        "linker_length": 20.5,
+                        "linker_length": 20,
                         "linker_width": 3.5,
                         "dye_radius1": 8,
                         "dye_radius2": 3,
@@ -602,12 +581,34 @@ if __name__ == '__main__':
                         "grid_spacing": 1.0,
                         "simulation_type": "AV3",
                         "state": 1,
-                        "frame_mdtraj":  0,
+                        "frame_mdtraj": 0,
                         "contour_level_AV": 0,
-                        "contour_level_CV":  0.7,
+                        "contour_level_CV": 0.7,
                         "b_factor": 100,
-                        "gaussian_resolution":  2,
-                        "grid_buffer":  2.0,
+                        "gaussian_resolution": 2,
+                        "grid_buffer": 2.0,
+                        "transparent_AV": True
+                        },
+                   "Cy5-45-C5":
+                       {"attach_id": 1406,
+                        "mol_selection": "all",
+                        "linker_length": 20,
+                        "linker_width": 3.5,
+                        "dye_radius1": 9.5,
+                        "dye_radius2": 3,
+                        "dye_radius3": 1.5,
+                        "cv_fraction": 0.25,
+                        "cv_thickness": 3,
+                        "use_LabelLib": False,
+                        "grid_spacing": 1.0,
+                        "simulation_type": "AV3",
+                        "state": 1,
+                        "frame_mdtraj": 0,
+                        "contour_level_AV": 0,
+                        "contour_level_CV": 0.7,
+                        "b_factor": 100,
+                        "gaussian_resolution": 2,
+                        "grid_buffer": 2.0,
                         "transparent_AV": True},
                    },
               "Distance": {"Cy3-Cy5":
@@ -616,26 +617,22 @@ if __name__ == '__main__':
                            }
               }
 
-    filter_par = [["10", "C14"], ["10", "C2"], ["10", "C32"], ["65", "C14"], ["65", "C2"], ["65", "C11"]]
-
     print(os.getcwd())
-    md_analysis = DataAnalysis(working_dir= "/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete",
-                               path_sim_results=f"/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete/BTL_cryoEM_unrestraint",
+    md_analysis = DataAnalysis(working_dir="/home/felix/Documents/Mirko_TLR_unbound",
+                               path_sim_results=f"/home/felix/Documents/Mirko_TLR_unbound/m_tlr_ub",
                                analysis_parameter=analysis_paras, macv_label_pars=labels)
 
-
-
-    #md_analysis.make_data_analysis_results_dirs()
-    #md_analysis.export_pdb_trajectory(10000)
-    #md_analysis.export_range_pdb_trajectory(100, [10, 20000])
-    #md_analysis.make_ndx_of_rna("/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete/BTL_CEM_Dist_Rest/analysis/raw/cryo_em_model_labeled.gro",
-                                #"/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete/BTL_CEM_Dist_Rest/analysis/Index_Files/RNA.ndx")
-    #md_analysis.generate_r_kappa_from_dyes()
-    #md_analysis.make_dir(f"{md_analysis.analysis_dir}/macv")
-    #md_analysis.remove_dyes_from_trajectory()
-    #md_analysis.rewrite_atoms_after_unlabeling()
-    md_analysis.set_md_traj()
-    md_analysis.fret_macv = md_analysis.calculate_macv()
-    #md_analysis.load_macv()
-    md_analysis.write_rkappa_file_from_macv()
-    #md_analysis.genarate_rkappa_file_from_macv()
+    md_analysis.make_data_analysis_results_dirs(pbc_method="cluster")
+    md_analysis.export_pdb_trajectory(10000)
+    # md_analysis.export_range_pdb_trajectory(100, [10, 20000])
+    # md_analysis.make_ndx_of_rna("/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete/BTL_CEM_Dist_Rest/analysis/raw/cryo_em_model_labeled.gro",
+    # "/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete/BTL_CEM_Dist_Rest/analysis/Index_Files/RNA.ndx")
+    # md_analysis.generate_r_kappa_from_dyes()
+    # md_analysis.make_dir(f"{md_analysis.analysis_dir}/macv")
+    # md_analysis.remove_dyes_from_trajectory()
+    # md_analysis.rewrite_atoms_after_unlabeling()
+    # md_analysis.set_md_traj()
+    # md_analysis.fret_macv = md_analysis.calculate_macv()
+    # md_analysis.load_macv()
+    # md_analysis.write_rkappa_file_from_macv()
+    # md_analysis.genarate_rkappa_file_from_macv()
