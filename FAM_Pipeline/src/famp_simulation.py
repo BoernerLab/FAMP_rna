@@ -53,6 +53,36 @@ class MDSimulation:
             print("The specified folder does not exist but was created.")
         return working_dir
 
+    @staticmethod
+    def make_ndx_of_SOL(gro_file: str, output_file: str):
+        """RNA extractor
+
+        This function extracts atom id's belonging to an RNA Molecule and not to dyes and writes an .ndx file for
+        structure extraction in GROMACS
+
+        :param gro_file: path to gro file
+        :param output_file: path to the output file where the (should end with .ndx)
+        """
+        atoms = []
+        with open(gro_file) as f:
+            next(f)
+            next(f)
+            for i, line in enumerate(f):
+                if "SOL" in line:
+                    atoms.append(line.split()[2])
+
+        with open(output_file, 'w') as the_file:
+            the_file.write('[SOL]\n')
+            counter = 1
+            for element in atoms:
+                if counter == 15:
+                    the_file.write(f"{element.rjust(5)}\n")
+                    counter = 1
+                else:
+                    the_file.write(f"{element.rjust(5)}")
+                    counter = counter + 1
+            the_file.write('\n')
+
     def make_result_dir(self, directory_name):
         """
         Creates a directory where the results for operations are stored.
@@ -178,24 +208,35 @@ class MDSimulation:
 
         :return: none
         """
+
+        water_file = ""
+        if self.md_parameter["water_model"] == "tip3p":
+            water_file = "spc216.gro"
+        elif self.md_parameter["water_model"] == "tip4p":
+            water_file = "tip4p.gro"
+        else:
+            raise ValueError("Please use tip3p or tip4p as water model. Other water models are currently not implemented within the pipeline.")
+
         # os.chdir(working_dir_path + f"/{dir}")
         # print(os.getcwd())
         self.make_result_dir(f"{self.md_parameter['simulation_name']}/em")
-        self.run_command_win(
+        self.run_command(
             f"gmx pdb2gmx "
             f"-f {self.path_simulation_folder}/{self.input_structure_name}.pdb "
             f"-o {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
             f"-p {self.path_simulation_folder}/{self.input_structure_name}.top "
             f"-i {self.path_simulation_folder}/em/{self.input_structure_name}.itp "
             f"-missing "
-            f"-ignh",
-            b"15\n 3\n")
+            f"-ignh"
+            f"-ff amber14sb_OL15"
+            f"-water {self.md_parameter['water_model']}")
 
-        self.run_command(f"gmx editconf "
-                         f"-f {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
-                         f"-o {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
-                         f"-bt dodecahedron "
-                         f"-d {self.md_parameter['dist_to_box[nm]']}")
+        self.run_command(
+            f"gmx editconf "
+            f"-f {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
+            f"-o {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
+            f"-bt dodecahedron "
+            f"-d {self.md_parameter['dist_to_box[nm]']}")
 
         self.run_command(
             f"gmx solvate "
@@ -213,15 +254,18 @@ class MDSimulation:
             f"-po {self.path_simulation_folder}/em/{self.input_structure_name}.mdp "
             f"-maxwarn 2")
 
-        self.run_command_win(
+        self.make_ndx_of_SOL(f"{self.path_simulation_folder}/em/{self.input_structure_name}.gro",
+                             f"{self.path_simulation_folder}/em/SOL.ndx")
+
+        self.run_command(
             f"gmx genion "
             f"-s {self.path_simulation_folder}/em/{self.input_structure_name}.tpr "
             f"-o {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
             f"-p {self.path_simulation_folder}/{self.input_structure_name}.top "
             f"-nname Cl "
             f"-pname K "
-            f"-neutral",
-            b"3\n")
+            f"-neutral"
+            f"-n {self.path_simulation_folder}/em/SOL.ndx")
 
         self.run_command(
             f"gmx grompp "
@@ -232,8 +276,11 @@ class MDSimulation:
             f"-po {self.path_simulation_folder}/em/{self.input_structure_name}.mdp "
             f"-maxwarn 2")
 
+        self.make_ndx_of_SOL(f"{self.path_simulation_folder}/em/{self.input_structure_name}.gro",
+                             f"{self.path_simulation_folder}/em/SOL.ndx")
+
         if simulation_parameter["c_magnesium_ions[mol/l]"] > 0:
-            self.run_command_win(
+            self.run_command(
                 f"gmx genion "
                 f"-s {self.path_simulation_folder}/em/{self.input_structure_name}.tpr "
                 f"-o {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
@@ -241,8 +288,8 @@ class MDSimulation:
                 f"-nname Cl "
                 f"-pname MG "
                 f"-pq 2 "
-                f"-conc {simulation_parameter['c_magnesium_ions[mol/l]']}",
-                b"4\n")
+                f"-conc {simulation_parameter['c_magnesium_ions[mol/l]']}"
+                f"-n {self.path_simulation_folder}/em/SOL.ndx")
 
             self.run_command(
                 f"gmx grompp "
@@ -339,6 +386,7 @@ if __name__ == '__main__':
         "simulation_time[ns]": 1000,
         "temperature[°C]": 25,
         "dist_to_box[nm]": "1.25",
+        "water_model": "tip3p"
     }
     print(os.getcwd())
     hairpin_labeled = MDSimulation(working_dir=f"/home/felix/Documents/Mirko_TLR_unbound",
