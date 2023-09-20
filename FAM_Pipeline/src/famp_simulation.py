@@ -2,6 +2,7 @@ import subprocess
 import re
 import os
 import shutil
+from exceptions import GromacsMdrunError, GromacsEditconfError, GromacsGenionError, GromacsGromppError, GromacsSolvateError, GromacsPdb2gmxError
 
 
 class MDSimulation:
@@ -13,28 +14,41 @@ class MDSimulation:
         self.input_structure_name = self.get_input_structure_name()
 
     @staticmethod
-    def run_command_win(command: str, cmd_in: bytes):
-        """
-        Run a command in bash with user input. Calls python subprocess module.
+    def run_gromacs_command(command):
+        module_name = command.split()[1]
+        error_massege = f"{module_name} failed! \n" \
+                        f"Command: {command} \n" \
+                        f"Please read the GROMACS error massage for further trouble shooting!"
 
-        :param command: bash command
-        :param cmd_in: commandline input in bytes
-        :return: none
-        """
-        process = subprocess.Popen(["bash", "-c", command], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        process.communicate(input=cmd_in)
-        process.wait()
-
-    @staticmethod
-    def run_command(command: str):
-        process = subprocess.Popen(["bash", "-c", command], stdout=subprocess.PIPE, text=True)
-        while process.stdout.readable():
-            line = process.stdout.readline()
-
-            if not line:
-                break
-
-            print(line.strip())
+        try:
+            output = subprocess.check_output(
+                command, stderr=subprocess.STDOUT, shell=True,
+                universal_newlines=True)
+        except subprocess.CalledProcessError as exc:
+            print("Status : FAIL", exc.returncode, exc.output)
+            if module_name == "pdb2gmx":
+                print(error_massege)
+                raise GromacsPdb2gmxError
+            elif module_name == "editconf":
+                print(error_massege)
+                raise GromacsEditconfError
+            elif module_name == "solvate":
+                print(error_massege)
+                raise GromacsSolvateError
+            elif module_name == "grompp":
+                print(error_massege)
+                raise GromacsGromppError
+            elif module_name == "genion":
+                print(error_massege)
+                raise GromacsGenionError
+            elif module_name == "mdrun":
+                print(error_massege)
+                raise GromacsMdrunError
+            else:
+                print(error_massege)
+                raise Exception
+        else:
+            print("Output: \n{}\n".format(output))
 
     @staticmethod
     def sim_time_to_steps(sim_time):
@@ -69,17 +83,23 @@ class MDSimulation:
             next(f)
             for i, line in enumerate(f):
                 if "SOL" in line:
-                    atoms.append(line.split()[2])
+                    if len(line.split()) == 6:
+                        atom = line.split()[2]
+                        atoms.append(atom)
+                    else:
+                        atom = line.split()[1]
+                        number = re.split("OW|HW1|HW2|MW", atom)
+                        atoms.append(number[1])
 
         with open(output_file, 'w') as the_file:
             the_file.write('[SOL]\n')
             counter = 1
             for element in atoms:
                 if counter == 15:
-                    the_file.write(f"{element.rjust(5)}\n")
+                    the_file.write(f"{element.rjust(6)}\n")
                     counter = 1
                 else:
-                    the_file.write(f"{element.rjust(5)}")
+                    the_file.write(f"{element.rjust(6)}")
                     counter = counter + 1
             the_file.write('\n')
 
@@ -220,32 +240,32 @@ class MDSimulation:
         # os.chdir(working_dir_path + f"/{dir}")
         # print(os.getcwd())
         self.make_result_dir(f"{self.md_parameter['simulation_name']}/em")
-        self.run_command(
+        self.run_gromacs_command(
             f"gmx pdb2gmx "
             f"-f {self.path_simulation_folder}/{self.input_structure_name}.pdb "
             f"-o {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
             f"-p {self.path_simulation_folder}/{self.input_structure_name}.top "
             f"-i {self.path_simulation_folder}/em/{self.input_structure_name}.itp "
             f"-missing "
-            f"-ignh"
-            f"-ff amber14sb_OL15"
+            f"-ignh "
+            f"-ff amber14sb_OL15 "
             f"-water {self.md_parameter['water_model']}")
 
-        self.run_command(
+        self.run_gromacs_command(
             f"gmx editconf "
             f"-f {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
             f"-o {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
             f"-bt dodecahedron "
             f"-d {self.md_parameter['dist_to_box[nm]']}")
 
-        self.run_command(
+        self.run_gromacs_command(
             f"gmx solvate "
             f"-cp {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
-            f"-cs tip4p.gro "
+            f"-cs {water_file} "
             f"-o {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
             f"-p {self.path_simulation_folder}/{self.input_structure_name}.top ")
 
-        self.run_command(
+        self.run_gromacs_command(
             f"gmx grompp "
             f"-f {self.path_simulation_folder}/mdp/em.mdp "
             f"-c {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
@@ -257,17 +277,17 @@ class MDSimulation:
         self.make_ndx_of_SOL(f"{self.path_simulation_folder}/em/{self.input_structure_name}.gro",
                              f"{self.path_simulation_folder}/em/SOL.ndx")
 
-        self.run_command(
+        self.run_gromacs_command(
             f"gmx genion "
             f"-s {self.path_simulation_folder}/em/{self.input_structure_name}.tpr "
             f"-o {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
             f"-p {self.path_simulation_folder}/{self.input_structure_name}.top "
             f"-nname Cl "
             f"-pname K "
-            f"-neutral"
+            f"-neutral "
             f"-n {self.path_simulation_folder}/em/SOL.ndx")
 
-        self.run_command(
+        self.run_gromacs_command(
             f"gmx grompp "
             f"-f {self.path_simulation_folder}/mdp/em.mdp "
             f"-c {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
@@ -276,11 +296,12 @@ class MDSimulation:
             f"-po {self.path_simulation_folder}/em/{self.input_structure_name}.mdp "
             f"-maxwarn 2")
 
-        self.make_ndx_of_SOL(f"{self.path_simulation_folder}/em/{self.input_structure_name}.gro",
-                             f"{self.path_simulation_folder}/em/SOL.ndx")
-
         if simulation_parameter["c_magnesium_ions[mol/l]"] > 0:
-            self.run_command(
+
+            self.make_ndx_of_SOL(f"{self.path_simulation_folder}/em/{self.input_structure_name}.gro",
+                                 f"{self.path_simulation_folder}/em/SOL.ndx")
+
+            self.run_gromacs_command(
                 f"gmx genion "
                 f"-s {self.path_simulation_folder}/em/{self.input_structure_name}.tpr "
                 f"-o {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
@@ -288,10 +309,10 @@ class MDSimulation:
                 f"-nname Cl "
                 f"-pname MG "
                 f"-pq 2 "
-                f"-conc {simulation_parameter['c_magnesium_ions[mol/l]']}"
+                f"-conc {simulation_parameter['c_magnesium_ions[mol/l]']} "
                 f"-n {self.path_simulation_folder}/em/SOL.ndx")
 
-            self.run_command(
+            self.run_gromacs_command(
                 f"gmx grompp "
                 f"-f {self.path_simulation_folder}/mdp/em.mdp "
                 f"-c {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
@@ -300,7 +321,7 @@ class MDSimulation:
                 f"-po {self.path_simulation_folder}/em/{self.input_structure_name}.mdp "
                 f"-maxwarn 2")
 
-        self.run_command(
+        self.run_gromacs_command(
             f"gmx mdrun -v "
             f"-s {self.path_simulation_folder}/em/{self.input_structure_name}.tpr "
             f"-c {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
@@ -316,7 +337,7 @@ class MDSimulation:
         """
         self.make_result_dir(f"{self.md_parameter['simulation_name']}/nvt")
 
-        self.run_command(
+        self.run_gromacs_command(
             f"gmx grompp "
             f"-f {self.path_simulation_folder}/mdp/nvt.mdp "
             f"-c {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
@@ -326,7 +347,7 @@ class MDSimulation:
             f"-po {self.path_simulation_folder}/nvt/{self.input_structure_name}.mdp "
             f"-maxwarn 2")
 
-        self.run_command(
+        self.run_gromacs_command(
             f"gmx mdrun -v "
             f"-s {self.path_simulation_folder}/nvt/{self.input_structure_name}.tpr "
             f"-c {self.path_simulation_folder}/nvt/{self.input_structure_name}.gro "
@@ -337,7 +358,7 @@ class MDSimulation:
 
         self.make_result_dir(f"{self.md_parameter['simulation_name']}/npt")
 
-        self.run_command(
+        self.run_gromacs_command(
             f"gmx grompp "
             f"-f {self.path_simulation_folder}/mdp/npt.mdp "
             f"-c {self.path_simulation_folder}/nvt/{self.input_structure_name}.gro "
@@ -347,7 +368,7 @@ class MDSimulation:
             f"-o {self.path_simulation_folder}/npt/{self.input_structure_name}.tpr "
             f"-po {self.path_simulation_folder}/npt/{self.input_structure_name}.mdp "
             f"-maxwarn 2")
-        self.run_command(
+        self.run_gromacs_command(
             f"gmx mdrun -v "
             f"-s {self.path_simulation_folder}/npt/{self.input_structure_name}.tpr "
             f"-c {self.path_simulation_folder}/npt/{self.input_structure_name}.gro "
@@ -358,7 +379,7 @@ class MDSimulation:
 
         self.make_result_dir(f"{self.md_parameter['simulation_name']}/md0")
 
-        self.run_command(
+        self.run_gromacs_command(
             f"gmx grompp "
             f"-f {self.path_simulation_folder}/mdp/md0.mdp "
             f"-c {self.path_simulation_folder}/npt/{self.input_structure_name}.gro "
@@ -367,7 +388,7 @@ class MDSimulation:
             f"-o {self.path_simulation_folder}/md0/{self.input_structure_name}.tpr "
             f"-po {self.path_simulation_folder}/md0/{self.input_structure_name}.mdp  "
             f"-maxwarn 2")
-        self.run_command(
+        self.run_gromacs_command(
             f"gmx mdrun -v "
             f"-s {self.path_simulation_folder}/md0/{self.input_structure_name}.tpr "
             f"-c {self.path_simulation_folder}/md0/{self.input_structure_name}.gro "
@@ -382,15 +403,15 @@ class MDSimulation:
 if __name__ == '__main__':
     simulation_parameter = {
         "simulation_name": "m_tlr_ub",
-        "c_magnesium_ions[mol/l]": 0.00,
-        "simulation_time[ns]": 1000,
+        "c_magnesium_ions[mol/l]": 0.02,
+        "simulation_time[ns]": 0.1,
         "temperature[°C]": 25,
         "dist_to_box[nm]": "1.25",
         "water_model": "tip3p"
     }
     print(os.getcwd())
-    hairpin_labeled = MDSimulation(working_dir=f"/home/felix/Documents/Mirko_TLR_unbound",
-                                   file_path_input=f"/home/felix/Documents/Mirko_TLR_unbound/m_tlr_ub.pdb",
+    hairpin_labeled = MDSimulation(working_dir=f"/home/felix/Documents/md_pipeline_testfolder",
+                                   file_path_input=f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub_1.pdb",
                                    md_parameter=simulation_parameter)
 
     hairpin_labeled.prepare_new_md_run()
