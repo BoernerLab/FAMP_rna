@@ -2,7 +2,8 @@ import subprocess
 import re
 import os
 import shutil
-from exceptions import GromacsMdrunError, GromacsEditconfError, GromacsGenionError, GromacsGromppError, GromacsSolvateError, GromacsPdb2gmxError
+from exceptions import GromacsMdrunError, GromacsEditconfError, GromacsGenionError, GromacsGromppError, \
+    GromacsSolvateError, GromacsPdb2gmxError
 
 
 class MDSimulation:
@@ -12,6 +13,7 @@ class MDSimulation:
         self.md_parameter = md_parameter
         self.path_simulation_folder = self.get_simulation_path()
         self.input_structure_name = self.get_input_structure_name()
+        self.restraints = []
 
     @staticmethod
     def run_gromacs_command(command):
@@ -235,7 +237,8 @@ class MDSimulation:
         elif self.md_parameter["water_model"] == "tip4p":
             water_file = "tip4p.gro"
         else:
-            raise ValueError("Please use tip3p or tip4p as water model. Other water models are currently not implemented within the pipeline.")
+            raise ValueError(
+                "Please use tip3p or tip4p as water model. Other water models are currently not implemented within the pipeline.")
 
         # os.chdir(working_dir_path + f"/{dir}")
         # print(os.getcwd())
@@ -297,7 +300,6 @@ class MDSimulation:
             f"-maxwarn 2")
 
         if simulation_parameter["c_magnesium_ions[mol/l]"] > 0:
-
             self.make_ndx_of_SOL(f"{self.path_simulation_folder}/em/{self.input_structure_name}.gro",
                                  f"{self.path_simulation_folder}/em/SOL.ndx")
 
@@ -399,6 +401,81 @@ class MDSimulation:
 
         # os.chdir(working_dir_path)
 
+    def add_restraint(self, restraint):
+        self.restraints.append(restraint)
+
+    def remove_all_restraints(self):
+        self.restraints = []
+
+    def generate_text_for_topology(self):
+        formatted_text = f"[ distance_restraints ] \n; ai   aj   type   index   type'      low     up1     up2     fac\n"
+
+        for i, restraint in enumerate(self.restraints):
+            formatted_text += f"{restraint['atom_id_1']}\t{restraint['atom_id_2']}\t1\t{i}\t1\t{restraint['lower_distance_limit']}\t{restraint['atoms_distance']}\t{restraint['upper_distance_limit']}\t{restraint['force_constant_fraction']}\n"
+
+        return formatted_text
+
+    def add_restraints_to_topology(self):
+        with open(f"{self.path_simulation_folder}/{self.input_structure_name}.top", 'a+') as f:
+            f.write(self.generate_text_for_topology())
+
+    def activate_restraints_mdp(self):
+
+        content = []
+        with open(f"{self.path_simulation_folder}/mdp/md0.mdp", 'r') as f:
+            if "disre" in f.read():
+                for i, line in enumerate(f):
+                    line = line.strip()
+                    if line.startswith('disre'):
+                        if line.contains("simple"):
+                            content.append(line)
+                        elif line.contains("no"):
+                            content.append("disre\t= simple")
+                    else:
+                        content.append(line)
+            else:
+                f.seek(0)
+                for i, line in enumerate(f):
+                    line = line.strip()
+                    content.append(line)
+                content.append("disre\t= simple")
+
+
+        print(content)
+        with open(f"{self.path_simulation_folder}/mdp/md0.mdp", 'w') as f:
+            for line in content:
+                f.write("%s\n" % line)
+
+    def deactivate_restraints_mdp(self):
+        content = []
+        with open(f"{self.path_simulation_folder}/mdp/md0.mdp", 'r') as f:
+            for i, line in enumerate(f):
+                line = line.strip()
+                if line.startswith('disre'):
+                    if line.contains("simple"):
+                        content.append("disre\t= no")
+                    elif line.contains("no"):
+                        content.append(line)
+                else:
+                    content.append(line)
+
+        # print(content)
+        with open(f"{self.path_simulation_folder}/mdp/md0.mdp", 'w') as f:
+            for line in content:
+                f.write("%s\n" % line)
+
+    def apply_restraints(self):
+        if simulation_parameter['distance_restraints']:
+            if not self.restraints:
+                print('There are no restraints to add. Restraints are deactivated')
+                self.deactivate_restraints_mdp()
+            else:
+                self.add_restraints_to_topology()
+                self.activate_restraints_mdp()
+        else:
+            self.deactivate_restraints_mdp()
+
+
 
 if __name__ == '__main__':
     simulation_parameter = {
@@ -407,14 +484,50 @@ if __name__ == '__main__':
         "simulation_time[ns]": 0.1,
         "temperature[°C]": 25,
         "dist_to_box[nm]": "1.25",
-        "water_model": "tip3p"
+        "water_model": "tip3p",
+        "distance_restraints": True
     }
     print(os.getcwd())
     hairpin_labeled = MDSimulation(working_dir=f"/home/felix/Documents/md_pipeline_testfolder",
                                    file_path_input=f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub_1.pdb",
                                    md_parameter=simulation_parameter)
 
-    hairpin_labeled.prepare_new_md_run()
-    hairpin_labeled.update_parameter()
-    hairpin_labeled.solvate_molecule()
+    #hairpin_labeled.prepare_new_md_run()
+    #hairpin_labeled.update_parameter()
+    #hairpin_labeled.solvate_molecule()
+
+    restraint_1 = {
+        "atom_id_1": 250,
+        "atom_id_2": 1831,
+        "lower_distance_limit": 0.0,
+        "atoms_distance": 0.32,
+        "upper_distance_limit": 0.5,
+        "force_constant_fraction": 1.0,
+
+    }
+
+    restraint_2 = {
+        "atom_id_1": 250,
+        "atom_id_2": 1819,
+        "lower_distance_limit": 0.0,
+        "atoms_distance": 0.28,
+        "upper_distance_limit": 0.5,
+        "force_constant_fraction": 1.0,
+
+    }
+
+    restraint_3 = {
+        "atom_id_1": 214,
+        "atom_id_2": 1819,
+        "lower_distance_limit": 0.0,
+        "atoms_distance": 0.28,
+        "upper_distance_limit": 0.5,
+        "force_constant_fraction": 1.0,
+    }
+
+    #hairpin_labeled.add_restraint(restraint_1)
+    #hairpin_labeled.add_restraint(restraint_2)
+    #hairpin_labeled.add_restraint(restraint_3)
+    #hairpin_labeled.apply_restraints()
+
     hairpin_labeled.run_simulation_steps()
