@@ -53,6 +53,12 @@ class MDSimulation:
             print("Output: \n{}\n".format(output))
 
     @staticmethod
+    def run_mdrun_command(command: str):
+        process = subprocess.Popen(["bash", "-c", command], stdout= subprocess.PIPE, universal_newlines=True)
+
+        ret_code = process.wait()
+
+    @staticmethod
     def sim_time_to_steps(sim_time):
         return int(1000000 * sim_time / 2)
 
@@ -323,7 +329,7 @@ class MDSimulation:
                 f"-po {self.path_simulation_folder}/em/{self.input_structure_name}.mdp "
                 f"-maxwarn 2")
 
-        self.run_gromacs_command(
+        self.run_mdrun_command(
             f"gmx mdrun -v "
             f"-s {self.path_simulation_folder}/em/{self.input_structure_name}.tpr "
             f"-c {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
@@ -339,6 +345,12 @@ class MDSimulation:
         """
         self.make_result_dir(f"{self.md_parameter['simulation_name']}/nvt")
 
+        update_parameter = "auto"
+        if self.md_parameter["water_model"] == "tip3p":
+            update_parameter = "gpu"
+        else:
+            update_parameter = "auto"
+
         self.run_gromacs_command(
             f"gmx grompp "
             f"-f {self.path_simulation_folder}/mdp/nvt.mdp "
@@ -349,14 +361,14 @@ class MDSimulation:
             f"-po {self.path_simulation_folder}/nvt/{self.input_structure_name}.mdp "
             f"-maxwarn 2")
 
-        self.run_gromacs_command(
+        self.run_mdrun_command(
             f"gmx mdrun -v "
             f"-s {self.path_simulation_folder}/nvt/{self.input_structure_name}.tpr "
             f"-c {self.path_simulation_folder}/nvt/{self.input_structure_name}.gro "
             f"-x {self.path_simulation_folder}/nvt/{self.input_structure_name}.xtc "
             f"-cpo {self.path_simulation_folder}/nvt/{self.input_structure_name}.cpt "
             f"-e {self.path_simulation_folder}/nvt/{self.input_structure_name}.edr "
-            f"-g {self.path_simulation_folder}/nvt/{self.input_structure_name}.log")
+            f"-g {self.path_simulation_folder}/nvt/{self.input_structure_name}.log -update {update_parameter}")
 
         self.make_result_dir(f"{self.md_parameter['simulation_name']}/npt")
 
@@ -370,14 +382,14 @@ class MDSimulation:
             f"-o {self.path_simulation_folder}/npt/{self.input_structure_name}.tpr "
             f"-po {self.path_simulation_folder}/npt/{self.input_structure_name}.mdp "
             f"-maxwarn 2")
-        self.run_gromacs_command(
+        self.run_mdrun_command(
             f"gmx mdrun -v "
             f"-s {self.path_simulation_folder}/npt/{self.input_structure_name}.tpr "
             f"-c {self.path_simulation_folder}/npt/{self.input_structure_name}.gro "
             f"-x {self.path_simulation_folder}/npt/{self.input_structure_name}.xtc "
             f"-cpo {self.path_simulation_folder}/npt/{self.input_structure_name}.cpt "
             f"-e {self.path_simulation_folder}/npt/{self.input_structure_name}.edr "
-            f"-g {self.path_simulation_folder}/npt/{self.input_structure_name}.log")
+            f"-g {self.path_simulation_folder}/npt/{self.input_structure_name}.log -update {update_parameter}")
 
         self.make_result_dir(f"{self.md_parameter['simulation_name']}/md0")
 
@@ -390,14 +402,14 @@ class MDSimulation:
             f"-o {self.path_simulation_folder}/md0/{self.input_structure_name}.tpr "
             f"-po {self.path_simulation_folder}/md0/{self.input_structure_name}.mdp  "
             f"-maxwarn 2")
-        self.run_gromacs_command(
+        self.run_mdrun_command(
             f"gmx mdrun -v "
             f"-s {self.path_simulation_folder}/md0/{self.input_structure_name}.tpr "
             f"-c {self.path_simulation_folder}/md0/{self.input_structure_name}.gro "
             f"-x {self.path_simulation_folder}/md0/{self.input_structure_name}.xtc "
             f"-cpo {self.path_simulation_folder}/md0/{self.input_structure_name}.cpt "
             f"-e {self.path_simulation_folder}/md0/{self.input_structure_name}.edr "
-            f"-g {self.path_simulation_folder}/md0/{self.input_structure_name}.log")
+            f"-g {self.path_simulation_folder}/md0/{self.input_structure_name}.log -update {update_parameter}")
 
         # os.chdir(working_dir_path)
 
@@ -408,7 +420,7 @@ class MDSimulation:
         self.restraints = []
 
     def generate_text_for_topology(self):
-        formatted_text = f"[ distance_restraints ] \n; ai   aj   type   index   type'      low     up1     up2     fac\n"
+        formatted_text = f"\n[ distance_restraints ] \n; ai   aj   type   index   type'      low     up1     up2     fac\n"
 
         for i, restraint in enumerate(self.restraints):
             formatted_text += f"{restraint['atom_id_1']}\t{restraint['atom_id_2']}\t1\t{i}\t1\t{restraint['lower_distance_limit']}\t{restraint['atoms_distance']}\t{restraint['upper_distance_limit']}\t{restraint['force_constant_fraction']}\n"
@@ -416,8 +428,23 @@ class MDSimulation:
         return formatted_text
 
     def add_restraints_to_topology(self):
-        with open(f"{self.path_simulation_folder}/{self.input_structure_name}.top", 'a+') as f:
-            f.write(self.generate_text_for_topology())
+        file_content = []
+        file_position = 0
+        with open(f"{self.path_simulation_folder}/{self.input_structure_name}.top", 'r') as f:
+            for i, line in enumerate(f):
+                line = line.strip()
+                if "; Include water topology" in line:
+                    file_position = i
+                file_content.append(line)
+
+        restraint_text = self.generate_text_for_topology().split("\n")
+
+        for i, text in enumerate(reversed(restraint_text)):
+            file_content.insert((file_position-1)+1, text)
+
+        with open(f"{self.path_simulation_folder}/{self.input_structure_name}.top", 'w') as f:
+            for line in file_content:
+                f.write("%s\n" % line)
 
     def activate_restraints_mdp(self):
 
@@ -481,9 +508,9 @@ if __name__ == '__main__':
     simulation_parameter = {
         "simulation_name": "m_tlr_ub",
         "c_magnesium_ions[mol/l]": 0.02,
-        "simulation_time[ns]": 0.1,
+        "simulation_time[ns]": 1,
         "temperature[°C]": 25,
-        "dist_to_box[nm]": "1.25",
+        "dist_to_box[nm]": "1",
         "water_model": "tip3p",
         "distance_restraints": True
     }
@@ -492,9 +519,9 @@ if __name__ == '__main__':
                                    file_path_input=f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub_1.pdb",
                                    md_parameter=simulation_parameter)
 
-    #hairpin_labeled.prepare_new_md_run()
-    #hairpin_labeled.update_parameter()
-    #hairpin_labeled.solvate_molecule()
+    hairpin_labeled.prepare_new_md_run()
+    hairpin_labeled.update_parameter()
+    hairpin_labeled.solvate_molecule()
 
     restraint_1 = {
         "atom_id_1": 250,
@@ -502,7 +529,7 @@ if __name__ == '__main__':
         "lower_distance_limit": 0.0,
         "atoms_distance": 0.32,
         "upper_distance_limit": 0.5,
-        "force_constant_fraction": 1.0,
+        "force_constant_fraction": 0.5,
 
     }
 
@@ -512,7 +539,7 @@ if __name__ == '__main__':
         "lower_distance_limit": 0.0,
         "atoms_distance": 0.28,
         "upper_distance_limit": 0.5,
-        "force_constant_fraction": 1.0,
+        "force_constant_fraction": 0.5,
 
     }
 
@@ -522,12 +549,11 @@ if __name__ == '__main__':
         "lower_distance_limit": 0.0,
         "atoms_distance": 0.28,
         "upper_distance_limit": 0.5,
-        "force_constant_fraction": 1.0,
+        "force_constant_fraction": 0.5,
     }
 
-    #hairpin_labeled.add_restraint(restraint_1)
-    #hairpin_labeled.add_restraint(restraint_2)
-    #hairpin_labeled.add_restraint(restraint_3)
-    #hairpin_labeled.apply_restraints()
-
+    hairpin_labeled.add_restraint(restraint_1)
+    hairpin_labeled.add_restraint(restraint_2)
+    hairpin_labeled.add_restraint(restraint_3)
+    hairpin_labeled.apply_restraints()
     hairpin_labeled.run_simulation_steps()
