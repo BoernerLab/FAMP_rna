@@ -16,7 +16,15 @@ class MDSimulation:
         self.restraints = []
 
     @staticmethod
-    def run_gromacs_command(command):
+    def run_gromacs_command(command: str):
+        """Uses subprocess to run gromacs commands.
+
+        This function executes subprocesses by commands. In particular, GROMACS bash commands are executed here and
+        their errors are checked. Specific exceptions for different modules are thrown for different GROMACS modules.
+        Command stdout is printed when the process is finished.
+
+        :param command: Simple string with a bash command
+        """
         module_name = command.split()[1]
         error_massege = f"{module_name} failed! \n" \
                         f"Command: {command} \n" \
@@ -54,20 +62,46 @@ class MDSimulation:
 
     @staticmethod
     def run_mdrun_command(command: str):
+        """Uses subprocess to run gromacs mdrun with live output.
+
+        Utilized solely for executing the mdrun command, displaying real-time output in the terminal.
+        Any command errors are not captured.
+        :param command: Simple string with a bash command
+        """
         process = subprocess.Popen(["bash", "-c", command], stdout= subprocess.PIPE, universal_newlines=True)
 
         ret_code = process.wait()
 
     @staticmethod
-    def sim_time_to_steps(sim_time):
+    def sim_time_to_steps(sim_time: float) -> int:
+        """Converting simulation time to simulation steps.
+
+        The function calculates the number of simulation steps needed based on a given total simulation time in
+        nanoseconds for an integration time step of 2 fs.
+
+        :param sim_time:
+
+        """
         return int(1000000 * sim_time / 2)
 
     @staticmethod
-    def degree_to_kelvin(degree):
+    def degree_to_kelvin(degree: int) -> int:
+        """Converts °C to Kelvin
+
+        :param degree: °C
+
+        """
         return degree + 273
 
     @staticmethod
-    def create_working_dir(working_dir):
+    def create_working_dir(working_dir: str) -> str:
+        """Creates a (working) directory
+
+        Creates a directory if it does not already exist. If the directory exists, only a print is output.
+
+        :param working_dir: Path of the directory to be created
+
+        """
         if os.path.isdir(working_dir):
             print("The specified folder exists.")
         else:
@@ -129,17 +163,20 @@ class MDSimulation:
         else:
             print(f"Successfully created the directory {result_dir}. Results can be found there")
 
-    def get_simulation_path(self):
+    def get_simulation_path(self) -> str:
         return f"{self.working_dir}/{self.md_parameter['simulation_name']}"
 
-    def get_input_structure_name(self):
+    def get_input_structure_name(self) -> str:
         file_name = os.path.basename(os.path.normpath(self.file_path_input))
         structure_name = file_name[:-4]
         return structure_name
 
     def change_temperature_in_nvt(self, temperature):
+        """Changes the tempreature in the mdp files
+
+        """
         temp_in_k = self.degree_to_kelvin(temperature)
-        for source_dir in ["nvt", "md0"]:
+        for source_dir in ["nvt", "npt" ,"md0"]:
             content = []
             with open(f"{self.path_simulation_folder}/mdp/{source_dir}.mdp", 'r') as f:
                 for i, line in enumerate(f):
@@ -155,6 +192,8 @@ class MDSimulation:
                 for line in content:
                     f.write("%s\n" % line)
 
+    """
+    
     def change_temperature_in_npt(self, temperature):
         temp_in_k = self.degree_to_kelvin(temperature)
         content = []
@@ -171,6 +210,7 @@ class MDSimulation:
         with open(f"{self.path_simulation_folder}/mdp/npt.mdp", 'w') as f:
             for line in content:
                 f.write("%s\n" % line)
+    """
 
     def change_sim_time_in_md0(self, time):
         simulation_steps = self.sim_time_to_steps(time)
@@ -213,12 +253,12 @@ class MDSimulation:
         self.copy_input_model()
         # Ändern der Parameter in den mdp files
         self.change_temperature_in_nvt(simulation_parameter["temperature[°C]"])
-        self.change_temperature_in_npt(simulation_parameter["temperature[°C]"])
+        #self.change_temperature_in_npt(simulation_parameter["temperature[°C]"])
         self.change_sim_time_in_md0(simulation_parameter["simulation_time[ns]"])
 
     def update_parameter(self):
         self.change_temperature_in_nvt(simulation_parameter["temperature[°C]"])
-        self.change_temperature_in_npt(simulation_parameter["temperature[°C]"])
+        #self.change_temperature_in_npt(simulation_parameter["temperature[°C]"])
         self.change_sim_time_in_md0(simulation_parameter["simulation_time[ns]"])
 
     def copy_input_model(self) -> None:
@@ -519,9 +559,9 @@ if __name__ == '__main__':
                                    file_path_input=f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub_1.pdb",
                                    md_parameter=simulation_parameter)
 
-    hairpin_labeled.prepare_new_md_run()
+    #hairpin_labeled.prepare_new_md_run()
     hairpin_labeled.update_parameter()
-    hairpin_labeled.solvate_molecule()
+    #hairpin_labeled.solvate_molecule()
 
     restraint_1 = {
         "atom_id_1": 250,
@@ -552,8 +592,8 @@ if __name__ == '__main__':
         "force_constant_fraction": 0.5,
     }
 
-    hairpin_labeled.add_restraint(restraint_1)
-    hairpin_labeled.add_restraint(restraint_2)
-    hairpin_labeled.add_restraint(restraint_3)
-    hairpin_labeled.apply_restraints()
-    hairpin_labeled.run_simulation_steps()
+    #hairpin_labeled.add_restraint(restraint_1)
+    #hairpin_labeled.add_restraint(restraint_2)
+    #hairpin_labeled.add_restraint(restraint_3)
+    #hairpin_labeled.apply_restraints()
+    #hairpin_labeled.run_simulation_steps()
