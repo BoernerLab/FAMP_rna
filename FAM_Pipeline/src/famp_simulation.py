@@ -68,9 +68,9 @@ class MDSimulation:
         Any command errors are not captured.
         :param command: Simple string with a bash command
         """
-        process = subprocess.Popen(["bash", "-c", command], stdout= subprocess.PIPE, universal_newlines=True)
+        process = subprocess.Popen(["bash", "-c", command], stdout=subprocess.PIPE, universal_newlines=True)
 
-        ret_code = process.wait()
+        process.wait()
 
     @staticmethod
     def sim_time_to_steps(sim_time: float) -> int:
@@ -171,12 +171,13 @@ class MDSimulation:
         structure_name = file_name[:-4]
         return structure_name
 
-    def change_temperature_in_nvt(self, temperature):
+    def change_temperature_in_mdp_files(self, temperature: int):
         """Changes the tempreature in the mdp files
 
+        :param temperature: integer value
         """
         temp_in_k = self.degree_to_kelvin(temperature)
-        for source_dir in ["nvt", "npt" ,"md0"]:
+        for source_dir in ["nvt", "npt", "md0"]:
             content = []
             with open(f"{self.path_simulation_folder}/mdp/{source_dir}.mdp", 'r') as f:
                 for i, line in enumerate(f):
@@ -192,27 +193,14 @@ class MDSimulation:
                 for line in content:
                     f.write("%s\n" % line)
 
-    """
-    
-    def change_temperature_in_npt(self, temperature):
-        temp_in_k = self.degree_to_kelvin(temperature)
-        content = []
-        with open(f"{self.path_simulation_folder}/mdp/npt.mdp", 'r') as f:
-            for i, line in enumerate(f):
-                line = line.strip()
-                if line.startswith('ref_t'):
-                    # print(re.sub(pattern = "[0-9]+", repl = str(temp_in_K), string=line))
-                    content.append(re.sub(pattern="[0-9]+", repl=str(temp_in_k), string=line))
-                else:
-                    content.append(line)
-
-        # print(content)
-        with open(f"{self.path_simulation_folder}/mdp/npt.mdp", 'w') as f:
-            for line in content:
-                f.write("%s\n" % line)
-    """
-
     def change_sim_time_in_md0(self, time):
+        """Changing the simulation time
+
+        This function changes the simulation steps in a mdp file. The entered simulation time (ns) is converted
+        into the simulation time with integration step size of 2 fs with the function sim_time_to_step().
+
+        :param time: Specification of the time to be simulated in ns.
+        """
         simulation_steps = self.sim_time_to_steps(time)
         content = []
         with open(f"{self.path_simulation_folder}/mdp/md0.mdp", 'r') as f:
@@ -229,12 +217,18 @@ class MDSimulation:
                 f.write("%s\n" % line)
 
     def copy_files_to_sim_dir(self):
+        """Copies files to the simulaiton folder.
+
+        A new folder for the simulation run is created here. The standard parameter files (mdp) and the force field are
+        copied from the scripts folder to the newly created directory.
+
+        """
         src_folder = "./scripts/gromacs"
         dst_folder = self.working_dir + f"/{self.md_parameter['simulation_name']}"
 
         if os.path.exists(dst_folder) and os.path.isdir(dst_folder):
             print(
-                "MD run already exists. To make a new Simulation change the Name od the Simulation in the MD parameter")
+                "MD run already exists. To make a new Simulation change the Name or the Simulation in the MD parameter")
         else:
             self.make_result_dir(self.md_parameter['simulation_name'])
 
@@ -248,19 +242,6 @@ class MDSimulation:
         else:
             shutil.copytree(src_folder + "/mdp", dst_folder + "/mdp")
 
-    def prepare_new_md_run(self):
-        self.copy_files_to_sim_dir()
-        self.copy_input_model()
-        # Ändern der Parameter in den mdp files
-        self.change_temperature_in_nvt(simulation_parameter["temperature[°C]"])
-        #self.change_temperature_in_npt(simulation_parameter["temperature[°C]"])
-        self.change_sim_time_in_md0(simulation_parameter["simulation_time[ns]"])
-
-    def update_parameter(self):
-        self.change_temperature_in_nvt(simulation_parameter["temperature[°C]"])
-        #self.change_temperature_in_npt(simulation_parameter["temperature[°C]"])
-        self.change_sim_time_in_md0(simulation_parameter["simulation_time[ns]"])
-
     def copy_input_model(self) -> None:
         """
         Copies the modeling result structure to the MD simulation directory.
@@ -270,21 +251,46 @@ class MDSimulation:
         shutil.copy(f"{self.file_path_input}",
                     f"{self.working_dir}/{self.md_parameter['simulation_name']}/{input_file_name}")
 
+    def prepare_new_md_run(self):
+        """Prepares a new MD run.
+
+        A folder for the simulation run is created and all necessary files like parameters, input structure and force
+        field are added to the directory. Then the temperature and the simulation time, defined in the parameters,
+        are updated within the parameter files.
+
+        """
+
+        self.copy_files_to_sim_dir()
+        self.copy_input_model()
+        self.change_temperature_in_mdp_files(simulation_parameter["temperature[°C]"])
+        self.change_sim_time_in_md0(simulation_parameter["simulation_time[ns]"])
+
+    def update_parameter(self):
+        """
+        Function to update the parameters simulation time and temperature within the mdp files.
+        """
+        self.change_temperature_in_mdp_files(simulation_parameter["temperature[°C]"])
+        self.change_sim_time_in_md0(simulation_parameter["simulation_time[ns]"])
+
     def solvate_molecule(self) -> None:
         """
         Running bash commands with python subprocess to solvate MD run with GROMACS. Reference solvate.sh.
+        Distinguishes between tip3p and tip4p water. Always uses the amber14sb_OL15 force field for the simulation,
+        which must be located in the installation directory of GROMACS. With the dockerization of GROMACS this
+        will be updated in the future.
+
 
         :return: none
         """
 
-        water_file = ""
         if self.md_parameter["water_model"] == "tip3p":
             water_file = "spc216.gro"
         elif self.md_parameter["water_model"] == "tip4p":
             water_file = "tip4p.gro"
         else:
             raise ValueError(
-                "Please use tip3p or tip4p as water model. Other water models are currently not implemented within the pipeline.")
+                "Please use tip3p or tip4p as water model. Other water models are "
+                "currently not implemented within the pipeline.")
 
         # os.chdir(working_dir_path + f"/{dir}")
         # print(os.getcwd())
@@ -380,12 +386,13 @@ class MDSimulation:
     def run_simulation_steps(self) -> None:
         """
         Running bash commands with python subprocess to make a single MD run with GROMACS. Reference single_run.sh
+        If the tip3p water model is selected, the calculation is preferred to the GPU, as this improves the performance
+        of the simulation.
 
         :return: None
         """
         self.make_result_dir(f"{self.md_parameter['simulation_name']}/nvt")
 
-        update_parameter = "auto"
         if self.md_parameter["water_model"] == "tip3p":
             update_parameter = "gpu"
         else:
@@ -453,13 +460,26 @@ class MDSimulation:
 
         # os.chdir(working_dir_path)
 
-    def add_restraint(self, restraint):
+    def add_restraint(self, restraint: dict):
+        """Adds a restraint to the restraint attribute
+
+        :param restraint:dictionary with the parameters describing a restraint.
+        """
         self.restraints.append(restraint)
 
     def remove_all_restraints(self):
+        """initializes the restraint attribute
+
+        """
         self.restraints = []
 
-    def generate_text_for_topology(self):
+    def generate_text_for_topology(self) -> str:
+        """Generates the text to be added to the .top file to define restraints.
+        The header for the restraints is created. The restraint attribute (type: list) is then iterated through to
+        list the restraints in a formatted way.
+
+        :return: Formatted text for the topology file. Type:str
+        """
         formatted_text = f"\n[ distance_restraints ] \n; ai   aj   type   index   type'      low     up1     up2     fac\n"
 
         for i, restraint in enumerate(self.restraints):
@@ -468,6 +488,12 @@ class MDSimulation:
         return formatted_text
 
     def add_restraints_to_topology(self):
+        """Adds the formatted text that defines the restriants to the topology file.
+
+        The text is added before the string "; Include water topology", because after the string a new section of the
+        topology starts and therefore errors occur. This string must exist in the file.
+
+        """
         file_content = []
         file_position = 0
         with open(f"{self.path_simulation_folder}/{self.input_structure_name}.top", 'r') as f:
@@ -487,6 +513,13 @@ class MDSimulation:
                 f.write("%s\n" % line)
 
     def activate_restraints_mdp(self):
+        """Activates the parameter for distance restraints.
+
+        The function activates the parameter "disre = simple" in the mdp file md0. This causes the restraints to be applied in
+        the simulation long run. The parameter is added if the parameter does not exist in the md0 file.
+
+
+        """
 
         content = []
         with open(f"{self.path_simulation_folder}/mdp/md0.mdp", 'r') as f:
@@ -508,12 +541,16 @@ class MDSimulation:
                 content.append("disre\t= simple")
 
 
-        print(content)
         with open(f"{self.path_simulation_folder}/mdp/md0.mdp", 'w') as f:
             for line in content:
                 f.write("%s\n" % line)
 
     def deactivate_restraints_mdp(self):
+        """Disables distnace retraints in the md0 file.
+
+        If the parameter "disre" exists in the md0 file it will be set to "disre = no".
+
+        """
         content = []
         with open(f"{self.path_simulation_folder}/mdp/md0.mdp", 'r') as f:
             for i, line in enumerate(f):
@@ -532,6 +569,12 @@ class MDSimulation:
                 f.write("%s\n" % line)
 
     def apply_restraints(self):
+        """
+        Allows the application of restraints.
+
+        The function checks the simulation parameters whether distance restraints should be activated or
+        deactivated and executes the corresponding functions.
+        """
         if simulation_parameter['distance_restraints']:
             if not self.restraints:
                 print('There are no restraints to add. Restraints are deactivated')
@@ -543,10 +586,9 @@ class MDSimulation:
             self.deactivate_restraints_mdp()
 
 
-
 if __name__ == '__main__':
     simulation_parameter = {
-        "simulation_name": "m_tlr_ub",
+        "simulation_name": "m_tlr_ub_final_test",
         "c_magnesium_ions[mol/l]": 0.02,
         "simulation_time[ns]": 1,
         "temperature[°C]": 25,
@@ -559,9 +601,9 @@ if __name__ == '__main__':
                                    file_path_input=f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub_1.pdb",
                                    md_parameter=simulation_parameter)
 
-    #hairpin_labeled.prepare_new_md_run()
+    hairpin_labeled.prepare_new_md_run()
     hairpin_labeled.update_parameter()
-    #hairpin_labeled.solvate_molecule()
+    hairpin_labeled.solvate_molecule()
 
     restraint_1 = {
         "atom_id_1": 250,
@@ -592,8 +634,8 @@ if __name__ == '__main__':
         "force_constant_fraction": 0.5,
     }
 
-    #hairpin_labeled.add_restraint(restraint_1)
-    #hairpin_labeled.add_restraint(restraint_2)
-    #hairpin_labeled.add_restraint(restraint_3)
-    #hairpin_labeled.apply_restraints()
-    #hairpin_labeled.run_simulation_steps()
+    hairpin_labeled.add_restraint(restraint_1)
+    hairpin_labeled.add_restraint(restraint_2)
+    hairpin_labeled.add_restraint(restraint_3)
+    hairpin_labeled.apply_restraints()
+    hairpin_labeled.run_simulation_steps()
