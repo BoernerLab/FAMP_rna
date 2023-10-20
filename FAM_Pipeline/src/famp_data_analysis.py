@@ -21,6 +21,45 @@ class DataAnalysis:
         self.input_structure_name = self.analysis_parameter["input_structure_name"]
         self.md_traj = None
         self.fret_macv = None
+        self.simulation_type = None
+
+    def parameter_result_file_checker(self):
+        dye_list = ["C3W", "C5W", "C7N", "C55", "C75", "A35", "A48", "A53", "A56", "A59", "A64", "T39", "T42", "T46",
+                    "T48", "T49", "T51", "T52", "T61"]
+
+        acceptor = self.analysis_parameter['Acceptor_residue_name_number']
+        donor = self.analysis_parameter['Donor_residue_name_number']
+        if os.path.isdir(self.working_dir):
+            pass
+        else:
+            print(f"The workring directory {self.working_dir} does not exist")
+
+        if os.path.isdir(self.path_sim_results):
+            pass
+        else:
+            print(f"The directory of MD results {self.working_dir} does not exist")
+
+        if os.path.isdir(f"{self.path_sim_results}/md0"):
+            results_file_path = f"{self.path_sim_results}/md0/{self.input_structure_name}"
+            if os.path.isfile(f"{results_file_path}.gro") and os.path.isfile(f"{results_file_path}.xtc"):
+                if acceptor[0] in dye_list and donor[0] in dye_list:
+                    print(f"{results_file_path}.gro")
+                    with open(f"{results_file_path}.gro") as file:
+                        if f"{acceptor[1]}{acceptor[0]}" and f"{donor[1]}{donor[0]}" in file.read():
+                            print("Dyes found: Dye and MACV calculations will be performed")
+                            self.simulation_type = "DYE"
+                        else:
+                            print("Dyes not found. Please check your parameter input if you have performed a dye "
+                                  "simulation. Otherwise a MACV calculation will be performed")
+                            self.simulation_type = "MACV"
+                else:
+                    print(
+                        "Specified dyes are not known. Please check your entries of the dye names in the analyses parameter. ")
+            else:
+                print(f"Cannot find the file {results_file_path}.gro or {results_file_path}.xtc."
+                      f"Please make sure that the paths and inputsrtructure name are correct.")
+        else:
+            print(f"The directory {self.path_sim_results}/md0 expected but not found")
 
     @staticmethod
     def run_command(command: str):
@@ -378,13 +417,13 @@ class DataAnalysis:
         s_frames = self.get_selected_frames()
         selected_frames = range(0, s_frames[0], s_frames[1])
         print(s_frames)
-        fret = ft.cloud.pipeline_frames(self.md_traj, "Cy3-10-C5", 'Cy5-45-C5', self.macv_label_pars, selected_frames,
+        fret = ft.cloud.pipeline_frames(self.md_traj, "Cy3-65-O3'", "Cy5-10-C5", self.macv_label_pars, selected_frames,
                                         'Cy3-Cy5')
-        ft.cloud.save_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_macv_10000s.pkl', fret)
+        ft.cloud.save_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_mcv_10000s.pkl', fret)
         return fret
 
     def load_macv(self):
-        fret = ft.cloud.load_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_macv.pkl')
+        fret = ft.cloud.load_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_mcv_10000s.pkl')
         self.fret_macv = fret
         print(len(fret))
         return fret
@@ -393,7 +432,7 @@ class DataAnalysis:
         s_frames = self.get_selected_frames()
         fret_traj = ft.cloud.Trajectory(self.fret_macv, timestep=s_frames[1] * int(self.md_traj.timestep),
                                         kappasquare=0.66)
-        fret_traj.save_traj(f'{self.analysis_dir}/macv/R_kappa_ACV.dat', format='txt', R_kappa_only=True, units='nm',
+        fret_traj.save_traj(f'{self.analysis_dir}/macv/R_kappa_CV.dat', format='txt', R_kappa_only=True, units='nm',
                             header=False)
         fret_traj.dataframe.head()
 
@@ -558,24 +597,27 @@ class DataAnalysis:
 
 if __name__ == '__main__':
     analysis_paras = {
-        "simulation_name": "m_tlr_ub",
-        "input_structure_name": "m_tlr_ub",
-        "mean_donor_atom": 304,
-        "donor_dipole": [333, 310],
-        "mean_acceptor_atom": 1471,
-        "acceptor_dipole": [1501, 1478]
+        "simulation_name": "m_tlr_ub_1",
+        "input_structure_name": "m_tlr_ub_1",
+        "mean_donor_atom": 303,
+        "donor_dipole": [309, 332],
+        "mean_acceptor_atom": 1469,
+        "acceptor_dipole": [1476, 1499],
+        "Donor_residue_name_number": ("C3W", 10),
+        "Acceptor_residue_name_number": ("C5W", 45),
+
     }
 
     labels = {"Position":
-                  {"Cy3-10-C5":
+                  {"Cy5-10-C5":
                        {"attach_id": 310,
                         "mol_selection": "all",
                         "linker_length": 20,
                         "linker_width": 3.5,
-                        "dye_radius1": 8,
+                        "dye_radius1": 9.5,
                         "dye_radius2": 3,
                         "dye_radius3": 1.5,
-                        "cv_fraction": 0.25,
+                        "cv_fraction": 0.99,
                         "cv_thickness": 3,
                         "use_LabelLib": False,
                         "grid_spacing": 1.0,
@@ -589,15 +631,15 @@ if __name__ == '__main__':
                         "grid_buffer": 2.0,
                         "transparent_AV": True
                         },
-                   "Cy5-45-C5":
-                       {"attach_id": 1406,
+                   "Cy3-65-O3'":
+                       {"attach_id": 2052,
                         "mol_selection": "all",
                         "linker_length": 20,
                         "linker_width": 3.5,
-                        "dye_radius1": 9.5,
+                        "dye_radius1": 8.0,
                         "dye_radius2": 3,
                         "dye_radius3": 1.5,
-                        "cv_fraction": 0.25,
+                        "cv_fraction": 0.99,
                         "cv_thickness": 3,
                         "use_LabelLib": False,
                         "grid_spacing": 1.0,
@@ -618,19 +660,21 @@ if __name__ == '__main__':
               }
 
     print(os.getcwd())
-    md_analysis = DataAnalysis(working_dir="/home/felix/Documents/Mirko_TLR_unbound",
-                               path_sim_results=f"/home/felix/Documents/Mirko_TLR_unbound/m_tlr_ub",
+
+    md_analysis = DataAnalysis(working_dir="/home/felix/Documents/md_pipeline_testfolder",
+                               path_sim_results="/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub",
                                analysis_parameter=analysis_paras, macv_label_pars=labels)
 
-    md_analysis.make_data_analysis_results_dirs(pbc_method="cluster")
-    md_analysis.export_pdb_trajectory(10000)
+    md_analysis.parameter_result_file_checker()
+
+    # md_analysis.make_data_analysis_results_dirs(pbc_method="mol")
+    # md_analysis.export_pdb_trajectory(10)
     # md_analysis.export_range_pdb_trajectory(100, [10, 20000])
     # md_analysis.make_ndx_of_rna("/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete/BTL_CEM_Dist_Rest/analysis/raw/cryo_em_model_labeled.gro",
     # "/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete/BTL_CEM_Dist_Rest/analysis/Index_Files/RNA.ndx")
     # md_analysis.generate_r_kappa_from_dyes()
     # md_analysis.make_dir(f"{md_analysis.analysis_dir}/macv")
     # md_analysis.remove_dyes_from_trajectory()
-    # md_analysis.rewrite_atoms_after_unlabeling()
     # md_analysis.set_md_traj()
     # md_analysis.fret_macv = md_analysis.calculate_macv()
     # md_analysis.load_macv()
