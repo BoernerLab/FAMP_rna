@@ -2,6 +2,7 @@ import subprocess
 import os
 import MDAnalysis as mda
 import numpy as np
+import pandas
 from numpy import linalg as LA
 import re
 import fileinput
@@ -9,6 +10,51 @@ import shutil
 import pandas as pd
 import mdtraj as md
 import fretraj as ft
+
+
+class Dye:
+    def __init__(self, dye_parameter: tuple) -> None:
+        self.ff_abbreviation = dye_parameter[0]
+        self.attachment_residue = dye_parameter[1]
+        self.dye_name = None
+        self.central_c = None
+        self.dipole_names = None
+        self.dipole_ids = None
+        self.central_c_id = None
+        self.attechmentpoint_id = None
+        self.get_attributes_from_file()
+
+    def get_attributes_from_file(self):
+        print(self.ff_abbreviation)
+        dye_table = pandas.read_csv("scripts/dye_properties.csv", header=0)
+        dye_row = dye_table.loc[dye_table["dye_abbreviation"] == self.ff_abbreviation]
+        self.dye_name = dye_row["dye_name"].to_string(index=False)
+        self.central_c = dye_row["central_c"].to_string(index=False)
+        self.dipole_names = (dye_row["dipol_1"].to_string(index=False), dye_row["dipol_2"].to_string(index=False))
+
+    def get_ids_from_gro(self, gro_file):
+        dipole_id_1 = 0
+        dipole_id_2 = 0
+        if os.path.isfile(gro_file):
+            with open(gro_file, 'r') as f:
+                next(f)
+                next(f)
+                for i, line in enumerate(f):
+                    if not any(value in line for value in "SOL"):
+                        split_line = line.split()
+                        if split_line[0].startswith(f"{self.attachment_residue}{self.ff_abbreviation}"):
+                            if split_line[1] == self.central_c:
+                                self.central_c_id = int(split_line[2])
+                            if split_line[1] == self.dipole_names[0]:
+                                dipole_id_1 = int(split_line[2])
+                            if split_line[1] == self.dipole_names[1]:
+                                dipole_id_2 = int(split_line[2])
+                            if dipole_id_1 > 0 and dipole_id_2 > 0:
+                                self.dipole_ids = (dipole_id_1, dipole_id_2)
+        else:
+            print(
+                f"There should be a file named {self.input_structure_name}.gro in the folder {self.analysis_dir}/raw/."
+                f" Please check if this file and folder exist. Rename the file if necessary.")
 
 
 class DataAnalysis:
@@ -22,44 +68,9 @@ class DataAnalysis:
         self.md_traj = None
         self.fret_macv = None
         self.simulation_type = None
-
-    def parameter_result_file_checker(self):
-        dye_list = ["C3W", "C5W", "C7N", "C55", "C75", "A35", "A48", "A53", "A56", "A59", "A64", "T39", "T42", "T46",
-                    "T48", "T49", "T51", "T52", "T61"]
-
-        acceptor = self.analysis_parameter['Acceptor_residue_name_number']
-        donor = self.analysis_parameter['Donor_residue_name_number']
-        if os.path.isdir(self.working_dir):
-            pass
-        else:
-            print(f"The workring directory {self.working_dir} does not exist")
-
-        if os.path.isdir(self.path_sim_results):
-            pass
-        else:
-            print(f"The directory of MD results {self.working_dir} does not exist")
-
-        if os.path.isdir(f"{self.path_sim_results}/md0"):
-            results_file_path = f"{self.path_sim_results}/md0/{self.input_structure_name}"
-            if os.path.isfile(f"{results_file_path}.gro") and os.path.isfile(f"{results_file_path}.xtc"):
-                if acceptor[0] in dye_list and donor[0] in dye_list:
-                    print(f"{results_file_path}.gro")
-                    with open(f"{results_file_path}.gro") as file:
-                        if f"{acceptor[1]}{acceptor[0]}" and f"{donor[1]}{donor[0]}" in file.read():
-                            print("Dyes found: Dye and MACV calculations will be performed")
-                            self.simulation_type = "DYE"
-                        else:
-                            print("Dyes not found. Please check your parameter input if you have performed a dye "
-                                  "simulation. Otherwise a MACV calculation will be performed")
-                            self.simulation_type = "MACV"
-                else:
-                    print(
-                        "Specified dyes are not known. Please check your entries of the dye names in the analyses parameter. ")
-            else:
-                print(f"Cannot find the file {results_file_path}.gro or {results_file_path}.xtc."
-                      f"Please make sure that the paths and inputsrtructure name are correct.")
-        else:
-            print(f"The directory {self.path_sim_results}/md0 expected but not found")
+        self.parameter_result_file_checker()
+        self.acceptor_dye = Dye(dye_parameter=self.analysis_parameter["Acceptor_residue_name_number"])
+        self.donor_dye = Dye(dye_parameter=self.analysis_parameter["Donor_residue_name_number"])
 
     @staticmethod
     def run_command(command: str):
@@ -259,30 +270,50 @@ class DataAnalysis:
             return traj_df.loc[((traj_df['resSeq'] == residue_numbers[0]) & (traj_df['name'] == atom_names[0])) | (
                     (traj_df['resSeq'] == residue_numbers[1]) & (traj_df['name'] == [1]))]
 
-    def make_result_dir(self, directory_name):
-        """
-        Creates a directory where the results for operations are stored.
-        The directory is created in the defined working directory
-
-        :param: directory_name - Name of the new directory
-        :return: None
-        """
-        result_dir = f"{self.working_dir}/{directory_name}"
-        try:
-            os.mkdir(result_dir)
-        except FileExistsError:
-            print(f"Results can be found in: {result_dir}")
-        except OSError:
-            print(f"Failed to create {result_dir}")
-        else:
-            print(f"Successfully created the directory {result_dir}. Results can be found there")
-
     def set_md_traj(self):
         traj = md.load(f'{self.analysis_dir}/raw/{self.input_structure_name}_unlabeled.xtc',
                        top=f'{self.analysis_dir}/raw/{self.input_structure_name}_unlabeled_s1.pdb')
         self.md_traj = traj
 
-    # -----------------------------------------------------------------------------------------------------------------------
+    # ---------------------Preparing Files for MD Analysis procedure----------------------------------------------------
+
+    def parameter_result_file_checker(self):
+        dye_list = ["C3W", "C5W", "C7N", "C55", "C75", "A35", "A48", "A53", "A56", "A59", "A64", "T39", "T42", "T46",
+                    "T48", "T49", "T51", "T52", "T61"]
+
+        par_acceptor = self.analysis_parameter['Acceptor_residue_name_number']
+        par_donor = self.analysis_parameter['Donor_residue_name_number']
+        if os.path.isdir(self.working_dir):
+            pass
+        else:
+            print(f"The workring directory {self.working_dir} does not exist")
+
+        if os.path.isdir(self.path_sim_results):
+            pass
+        else:
+            print(f"The directory of MD results {self.working_dir} does not exist")
+
+        if os.path.isdir(f"{self.path_sim_results}/md0"):
+            results_file_path = f"{self.path_sim_results}/md0/{self.input_structure_name}"
+            if os.path.isfile(f"{results_file_path}.gro") and os.path.isfile(f"{results_file_path}.xtc"):
+                if par_acceptor[0] in dye_list and par_donor[0] in dye_list:
+                    print(f"{results_file_path}.gro")
+                    with open(f"{results_file_path}.gro") as file:
+                        if f"{par_acceptor[1]}{par_acceptor[0]}" and f"{par_donor[1]}{par_donor[0]}" in file.read():
+                            print("Dyes found: Parameter are ok. Dye and MACV calculations can be performed")
+                            self.simulation_type = "DYE"
+                        else:
+                            print("Dyes not found. Please check your parameter input if you have performed a dye "
+                                  "simulation. Otherwise only MACV calculation can be performed")
+                            self.simulation_type = "MACV"
+                else:
+                    print("Specified dyes are not known. Please check your entries of the dye names in the "
+                          "analyses parameter.")
+            else:
+                print(f"Cannot find the file {results_file_path}.gro or {results_file_path}.xtc."
+                      f"Please make sure that the paths and inputsrtructure name are correct.")
+        else:
+            print(f"The directory {self.path_sim_results}/md0 expected but not found")
 
     def reduce_center_xtc(self, pbc_method="mol"):
         """
@@ -324,6 +355,61 @@ class DataAnalysis:
         self.run_command(
             f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_traj_{traj_range[0]}_{traj_range[1]}.pdb -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc mol -dt {time_steps} -b {traj_range[0]} -e {traj_range[1]} -center")
 
+    def copy_files_to_raw(self):
+        """Prepare the directory for MD analysis procedure"""
+        src_folder = f"{self.path_sim_results}/md0"
+        dst_folder = f"{self.analysis_dir}/raw"
+        sim_name = self.analysis_parameter["input_structure_name"]
+        shutil.copy(src_folder + f"/{sim_name}_centered.xtc", dst_folder + f"/{sim_name}_centered.xtc")
+        shutil.copy(src_folder + f"/{sim_name}.gro", dst_folder + f"/{sim_name}.gro")
+        shutil.copy(src_folder + f"/{sim_name}.tpr", dst_folder + f"/{sim_name}.tpr")
+        shutil.copy(src_folder + f"/{sim_name}_s1.pdb", dst_folder + f"/{sim_name}_s1.pdb")
+
+    def reduce_gro_file(self):
+        """
+        Reduce a given gro file to atoms of the RNA. This reduced file is necessary for MD-Analysis.
+
+        Reads the ndx file of RNA and saves the atom id's in a list. Then reads the gro file and filter atom ids from
+        the list. The filtered lines are saved into a list and then written into a new reduced .gro file.
+
+        :return: none
+        """
+        path_to_gro_file = f"{self.analysis_dir}/raw/{self.input_structure_name}.gro"
+        path_to_ndx_file = f"{self.analysis_dir}/Index_Files/RNA.ndx"
+        if path_to_gro_file and path_to_ndx_file:
+            id_list = []
+            with open(path_to_ndx_file, 'r') as ndx:
+                next(ndx)
+                for i, line in enumerate(ndx):
+                    l = line.strip()
+                    for atom_id in l.split():
+                        id_list.append(atom_id)
+            # print(id_list)
+
+            file_content = []
+            iterator = 0
+            file_content.append("Text\n")
+            file_content.append(f"{len(id_list)}\n")
+            with open(path_to_gro_file, 'r') as gro:
+                next(gro)
+                next(gro)
+                for i, line in enumerate(gro):
+                    if iterator < len(id_list):
+                        # if not any(value in line for value in ("SOL")):
+                        # line = line.strip()
+                        l = line.split()
+
+                        if l[2] in id_list:
+                            # print(line.split())
+                            file_content.append(line)
+                            iterator = iterator + 1
+
+            with open(f'{path_to_gro_file[:-4]}_reduced.gro', 'w') as f:
+                for line in file_content:
+                    f.write(f"{line}")
+        else:
+            print(f"Please check if these both files {path_to_gro_file} and {path_to_ndx_file} exist.")
+
     def make_data_analysis_results_dirs(self, pbc_method="mol"):
         """
         Function to prepare a directory for the MD data analysis.
@@ -340,18 +426,9 @@ class DataAnalysis:
         self.make_dir(f"{analysis_dir}/Index_Files")
         self.reduce_center_xtc(pbc_method=pbc_method)
         self.copy_files_to_raw()
+        self.reduce_gro_file()
 
-    def copy_files_to_raw(self):
-        """Prepare the directory for MD analysis procedure"""
-        src_folder = f"{self.path_sim_results}/md0"
-        dst_folder = f"{self.analysis_dir}/raw"
-        sim_name = self.analysis_parameter["input_structure_name"]
-        shutil.copy(src_folder + f"/{sim_name}_centered.xtc", dst_folder + f"/{sim_name}_centered.xtc")
-        shutil.copy(src_folder + f"/{sim_name}.gro", dst_folder + f"/{sim_name}.gro")
-        shutil.copy(src_folder + f"/{sim_name}.tpr", dst_folder + f"/{sim_name}.tpr")
-        shutil.copy(src_folder + f"/{sim_name}_s1.pdb", dst_folder + f"/{sim_name}_s1.pdb")
-
-    # -----------------------------------------------------------------------------------------------------------------------
+    # ----------------------MACV calculations---------------------------------------------------------------------------
 
     def rewrite_atoms_after_unlabeling(self):
         """
@@ -449,7 +526,7 @@ class DataAnalysis:
 
         self.write_rkappa_file_from_macv()
 
-    # -----------------------------------------------------------------------------------------------------------------------
+    # -------------------------explicit dye simulation handling---------------------------------------------------------
 
     def get_atoms_coordinates(self, atom_id, universe):
         universe.trajectory[0]
@@ -485,51 +562,6 @@ class DataAnalysis:
             print(
                 f"There should be a file named {self.input_structure_name}.gro in the folder {self.analysis_dir}/raw/."
                 f" Please check if this file and folder exist. Rename the file if necessary.")
-
-    def reduce_gro_file(self):
-        """
-        Reduce a given gro file to atoms of the RNA. This reduced file is necessary for MD-Analysis.
-
-        Reads the ndx file of RNA and saves the atom id's in a list. Then reads the gro file and filter atom ids from
-        the list. The filtered lines are saved into a list and then written into a new reduced .gro file.
-
-        :return: none
-        """
-        path_to_gro_file = f"{self.analysis_dir}/raw/{self.input_structure_name}.gro"
-        path_to_ndx_file = f"{self.analysis_dir}/Index_Files/RNA.ndx"
-        if path_to_gro_file and path_to_ndx_file:
-            id_list = []
-            with open(path_to_ndx_file, 'r') as ndx:
-                next(ndx)
-                for i, line in enumerate(ndx):
-                    l = line.strip()
-                    for atom_id in l.split():
-                        id_list.append(atom_id)
-            # print(id_list)
-
-            file_content = []
-            iterator = 0
-            file_content.append("Text\n")
-            file_content.append(f"{len(id_list)}\n")
-            with open(path_to_gro_file, 'r') as gro:
-                next(gro)
-                next(gro)
-                for i, line in enumerate(gro):
-                    if iterator < len(id_list):
-                        # if not any(value in line for value in ("SOL")):
-                        # line = line.strip()
-                        l = line.split()
-
-                        if l[2] in id_list:
-                            # print(line.split())
-                            file_content.append(line)
-                            iterator = iterator + 1
-
-            with open(f'{path_to_gro_file[:-4]}_reduced.gro', 'w') as f:
-                for line in file_content:
-                    f.write(f"{line}")
-        else:
-            print(f"Please check if these both files {path_to_gro_file} and {path_to_ndx_file} exist.")
 
     def write_coordinate_file(self, file_name: str, dipole):
         """
@@ -573,7 +605,7 @@ class DataAnalysis:
         return df
 
     def generate_r_kappa_from_dyes(self):
-        self.reduce_gro_file()
+
         self.make_dir(f"{self.analysis_dir}/fluorburst")
         u = mda.Universe(f"{self.analysis_dir}/raw/{self.input_structure_name}_reduced.gro",
                          f"{self.analysis_dir}/raw/{self.input_structure_name}_centered.xtc")
@@ -665,9 +697,22 @@ if __name__ == '__main__':
                                path_sim_results="/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub",
                                analysis_parameter=analysis_paras, macv_label_pars=labels)
 
-    md_analysis.parameter_result_file_checker()
+    # 1. get all files ready in new analysis folder
+    #md_analysis.make_data_analysis_results_dirs()
 
-    # md_analysis.make_data_analysis_results_dirs(pbc_method="mol")
+    # 2. calculate r_kappa from explicit dyes
+
+    # 3. calculate r_kappa from macv
+
+
+    # md_analysis.parameter_result_file_checker()
+    acceptor = Dye(dye_parameter=("C3W",10))
+    print(acceptor.dye_name)
+    print(acceptor.central_c)
+    print(acceptor.dipole_names)
+    acceptor.get_ids_from_gro("/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub/analysis/raw/m_tlr_ub_1.gro")
+    print(acceptor.central_c_id, acceptor.dipole_ids)
+    #md_analysis.make_data_analysis_results_dirs(pbc_method="mol")
     # md_analysis.export_pdb_trajectory(10)
     # md_analysis.export_range_pdb_trajectory(100, [10, 20000])
     # md_analysis.make_ndx_of_rna("/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete/BTL_CEM_Dist_Rest/analysis/raw/cryo_em_model_labeled.gro",
