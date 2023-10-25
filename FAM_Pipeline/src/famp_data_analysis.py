@@ -53,7 +53,7 @@ class Dye:
                                 self.dipole_ids = (dipole_id_1, dipole_id_2)
         else:
             print(
-                f"There should be a file named {self.input_structure_name}.gro in the folder {self.analysis_dir}/raw/."
+                f"Cant find file: {gro_file}"
                 f" Please check if this file and folder exist. Rename the file if necessary.")
 
 
@@ -576,10 +576,10 @@ class DataAnalysis:
             zip(time * 10, dipole[0][:, 0], dipole[0][:, 1], dipole[0][:, 2], dipole[1][:, 0], dipole[1][:, 1],
                 dipole[1][:, 2])))
         print(len(df[0]))
-        df.to_csv(f"{self.analysis_dir}/fluorburst/{file_name}", sep='\t', header=False, index=False)
+        df.to_csv(f"{self.analysis_dir}/explicit_dyes/{file_name}", sep='\t', header=False, index=False)
 
         for i in range(0, 13):
-            self.line_prepender(f"{self.analysis_dir}/fluorburst/{file_name}", "#")
+            self.line_prepender(f"{self.analysis_dir}/explicit_dyes/{file_name}", "#")
 
     def write_rkappa_file_from_dyes(self, don_dipole, acc_dipole, mean_don_acc):
         """
@@ -587,7 +587,7 @@ class DataAnalysis:
 
         The 𝜅^2 values are calculated by the coordinates of the donor and acceptor dipoles. Then the mean inter dye
         distance ist calculated by the coordinates of mean donor and acceptor atoms. Then the time steps 𝜅^2 and mean
-        dye distances are combined to a dataframe and written to a file in the fluorburst folder.
+        dye distances are combined to a dataframe and written to a file in the explicit_dyes folder.
 
         :param don_dipole: Coordinates of donor dipole: [[[x,y,z]][[x,y,z]]]
         :param acc_dipole: Coordinates of acceptor dipole: [[[x,y,z]][[x,y,z]]]
@@ -596,30 +596,33 @@ class DataAnalysis:
         """
         kappa_2 = self.calculate_kappa_2(don_dipole, acc_dipole)
         time = np.arange(0, len(don_dipole[0]) + 9, 1, dtype=int)
-        # print(len(time))
         rda_md = self.calculate_inter_dye_distance(mean_don_acc[0], mean_don_acc[1])
-        # Datei generieren
+        # generate file
         df = pd.DataFrame(list(zip(time * 10, rda_md, kappa_2)))
         print(len(df[0]))
-        df.to_csv(f'{self.analysis_dir}/fluorburst/rkappa.dat', sep='\t', header=False, index=False)
+        df.to_csv(f'{self.analysis_dir}/explicit_dyes/rkappa.dat', sep='\t', header=False, index=False)
         return df
 
     def generate_r_kappa_from_dyes(self):
 
-        self.make_dir(f"{self.analysis_dir}/fluorburst")
+        self.make_dir(f"{self.analysis_dir}/explicit_dyes")
+
+        self.acceptor_dye.get_ids_from_gro(f"{self.analysis_dir}/raw/{self.input_structure_name}_reduced.gro")
+        self.donor_dye.get_ids_from_gro(f"{self.analysis_dir}/raw/{self.input_structure_name}_reduced.gro")
+
         u = mda.Universe(f"{self.analysis_dir}/raw/{self.input_structure_name}_reduced.gro",
                          f"{self.analysis_dir}/raw/{self.input_structure_name}_centered.xtc")
 
-        donor_dipol = self.analysis_parameter["donor_dipole"]
-        acceptor_dipol = self.analysis_parameter["acceptor_dipole"]
+        donor_dipole_coords = [self.get_atoms_coordinates(str(self.donor_dye.dipole_ids[0]), u),
+                               self.get_atoms_coordinates(str(self.donor_dye.dipole_ids[1]), u)]
+        acceptor_dipole_coords = [self.get_atoms_coordinates(str(self.acceptor_dye.dipole_ids[0]), u),
+                                  self.get_atoms_coordinates(str(self.acceptor_dye.dipole_ids[1]), u)]
 
-        donor_dipole_coords = [self.get_atoms_coordinates(str(donor_dipol[0]), u),
-                               self.get_atoms_coordinates(str(donor_dipol[1]), u)]
-        acceptor_dipole_coords = [self.get_atoms_coordinates(str(acceptor_dipol[0]), u),
-                                  self.get_atoms_coordinates(str(acceptor_dipol[1]), u)]
+        print(f"Donor ID:\ncentral c: {self.donor_dye.central_c_id}\ndipole: {self.donor_dye.dipole_ids}")
+        print(f"Acceptor ID:\ncentral c: {self.acceptor_dye.central_c_id}\ndipole: {self.acceptor_dye.dipole_ids}")
 
-        central_donor = str(self.analysis_parameter["mean_donor_atom"])
-        central_acceptor = str(self.analysis_parameter["mean_acceptor_atom"])
+        central_donor = str(self.donor_dye.central_c_id)
+        central_acceptor = str(self.acceptor_dye.central_c_id)
 
         mean_don_acc = [self.get_atoms_coordinates(central_donor, u), self.get_atoms_coordinates(central_acceptor, u)]
         self.write_rkappa_file_from_dyes(donor_dipole_coords, acceptor_dipole_coords, mean_don_acc)
@@ -631,10 +634,6 @@ if __name__ == '__main__':
     analysis_paras = {
         "simulation_name": "m_tlr_ub_1",
         "input_structure_name": "m_tlr_ub_1",
-        "mean_donor_atom": 303,
-        "donor_dipole": [309, 332],
-        "mean_acceptor_atom": 1469,
-        "acceptor_dipole": [1476, 1499],
         "Donor_residue_name_number": ("C3W", 10),
         "Acceptor_residue_name_number": ("C5W", 45),
 
@@ -701,18 +700,12 @@ if __name__ == '__main__':
     #md_analysis.make_data_analysis_results_dirs()
 
     # 2. calculate r_kappa from explicit dyes
-
+    md_analysis.generate_r_kappa_from_dyes()
     # 3. calculate r_kappa from macv
 
 
     # md_analysis.parameter_result_file_checker()
-    acceptor = Dye(dye_parameter=("C3W",10))
-    print(acceptor.dye_name)
-    print(acceptor.central_c)
-    print(acceptor.dipole_names)
-    acceptor.get_ids_from_gro("/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub/analysis/raw/m_tlr_ub_1.gro")
-    print(acceptor.central_c_id, acceptor.dipole_ids)
-    #md_analysis.make_data_analysis_results_dirs(pbc_method="mol")
+    # md_analysis.make_data_analysis_results_dirs(pbc_method="mol")
     # md_analysis.export_pdb_trajectory(10)
     # md_analysis.export_range_pdb_trajectory(100, [10, 20000])
     # md_analysis.make_ndx_of_rna("/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete/BTL_CEM_Dist_Rest/analysis/raw/cryo_em_model_labeled.gro",
