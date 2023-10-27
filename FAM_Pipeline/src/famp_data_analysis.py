@@ -53,19 +53,19 @@ class Dye:
         pdb_df = self.read_pdb_file(pdb_file)
         print(pdb_file)
         residue_numbers = pdb_df["residue_number"].unique()
+        attechment_atom = ""
         if self.attachment_residue == 1:
             atom_id = pdb_df[(pdb_df["residue_number"] == str(1)) & (pdb_df["atom_name"] == "O5'")]
+            attechment_atom = "O5'"
         elif self.attachment_residue == int(residue_numbers[-1]):
             atom_id = pdb_df[(pdb_df["residue_number"] == str(residue_numbers[-1])) & (pdb_df["atom_name"] == "O3'")]
+            attechment_atom = "O3'"
         else:
             atom_id = pdb_df[(pdb_df["residue_number"] == str(self.attachment_residue)) & (pdb_df["atom_name"] == "C5")]
+            attechment_atom = "C5"
 
         atom_id = int(atom_id["atom_id"])
-        return atom_id
-
-
-
-
+        return atom_id, attechment_atom
 
     def get_attributes_from_file(self):
         print(self.ff_abbreviation)
@@ -683,7 +683,7 @@ if __name__ == '__main__':
     }
 
     labels = {"Position":
-                  {"Cy5-10-C5":
+                  {"sCy5-10-C5":
                        {"attach_id": 310,
                         "mol_selection": "all",
                         "linker_length": 20,
@@ -705,7 +705,7 @@ if __name__ == '__main__':
                         "grid_buffer": 2.0,
                         "transparent_AV": True
                         },
-                   "Cy3-65-O3'":
+                   "sCy3-65-O3'":
                        {"attach_id": 2052,
                         "mol_selection": "all",
                         "linker_length": 20,
@@ -727,7 +727,7 @@ if __name__ == '__main__':
                         "grid_buffer": 2.0,
                         "transparent_AV": True},
                    },
-              "Distance": {"Cy3-Cy5":
+              "Distance": {"sCy3-sCy5":
                                {"R0": 54,
                                 "n_dist": 10 ** 6}
                            }
@@ -748,17 +748,3 @@ if __name__ == '__main__':
     dye = Dye(("C3W", 63))
     pdb = dye.get_attechment_id_from_pdb(f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub/analysis/raw/m_tlr_ub_1_s1.pdb")
     print(pdb)
-    # md_analysis.parameter_result_file_checker()
-    # md_analysis.make_data_analysis_results_dirs(pbc_method="mol")
-    # md_analysis.export_pdb_trajectory(10)
-    # md_analysis.export_range_pdb_trajectory(100, [10, 20000])
-    # md_analysis.make_ndx_of_rna("/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete/BTL_CEM_Dist_Rest/analysis/raw/cryo_em_model_labeled.gro",
-    # "/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete/BTL_CEM_Dist_Rest/analysis/Index_Files/RNA.ndx")
-    # md_analysis.generate_r_kappa_from_dyes()
-    # md_analysis.make_dir(f"{md_analysis.analysis_dir}/macv")
-    # md_analysis.remove_dyes_from_trajectory()
-    # md_analysis.set_md_traj()
-    # md_analysis.fret_macv = md_analysis.calculate_macv()
-    # md_analysis.load_macv()
-    # md_analysis.write_rkappa_file_from_macv()
-    # md_analysis.genarate_rkappa_file_from_macv()
