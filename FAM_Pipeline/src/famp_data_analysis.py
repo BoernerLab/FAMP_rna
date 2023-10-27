@@ -49,6 +49,23 @@ class Dye:
         pdb_df = pd.DataFrame(content, columns= column_names)
         return pdb_df
 
+    def get_attechment_id_from_pdb(self, pdb_file):
+        pdb_df = self.read_pdb_file(pdb_file)
+        print(pdb_file)
+        residue_numbers = pdb_df["residue_number"].unique()
+        if self.attachment_residue == 1:
+            atom_id = pdb_df[(pdb_df["residue_number"] == str(1)) & (pdb_df["atom_name"] == "O5'")]
+        elif self.attachment_residue == int(residue_numbers[-1]):
+            atom_id = pdb_df[(pdb_df["residue_number"] == str(residue_numbers[-1])) & (pdb_df["atom_name"] == "O3'")]
+        else:
+            atom_id = pdb_df[(pdb_df["residue_number"] == str(self.attachment_residue)) & (pdb_df["atom_name"] == "C5")]
+
+        atom_id = int(atom_id["atom_id"])
+        return atom_id
+
+
+
+
 
     def get_attributes_from_file(self):
         print(self.ff_abbreviation)
@@ -728,9 +745,9 @@ if __name__ == '__main__':
     # 2. calculate r_kappa from explicit dyes
     # md_analysis.generate_r_kappa_from_dyes()
     # 3. calculate r_kappa from macv
-    dye = Dye(("C3W", 10))
-    pdb_df = dye.read_pdb_file(f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub/analysis/raw/m_tlr_ub_1_s1.pdb")
-    print(pdb_df)
+    dye = Dye(("C3W", 63))
+    pdb = dye.get_attechment_id_from_pdb(f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub/analysis/raw/m_tlr_ub_1_s1.pdb")
+    print(pdb)
     # md_analysis.parameter_result_file_checker()
     # md_analysis.make_data_analysis_results_dirs(pbc_method="mol")
     # md_analysis.export_pdb_trajectory(10)
