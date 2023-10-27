@@ -24,6 +24,32 @@ class Dye:
         self.attechmentpoint_id = None
         self.get_attributes_from_file()
 
+    @staticmethod
+    def read_pdb_file(pdb_file):
+        column_names = []
+        content = []
+        if os.path.isfile(pdb_file):
+            with open(pdb_file, "r") as file:
+                for line in file:
+                    if line.startswith("ATOM") or line.startswith("HETATM"):
+                        splitted_line = line.split()
+                        if len(splitted_line) == 11:
+                            column_names = ["type", "atom_id", "atom_name", "residue_name", "residue_number", "X", "Y",
+                                            "Z", "occupancy","temperature_factor", "element"]
+                        elif len(splitted_line) == 12:
+                            column_names = ["type", "atom_id", "atom_name", "residue_name", "chain_id","residue_number",
+                                            "X", "Y", "Z", "occupancy", "temperature_factor", "element"]
+                        else:
+                            print("The PDB file has more columns than expected.")
+                        content.append(splitted_line)
+        else:
+            print(f"Cant find file: {pdb_file}"
+                  f" Please check if this file and folder exist. Rename the file if necessary.")
+
+        pdb_df = pd.DataFrame(content, columns= column_names)
+        return pdb_df
+
+
     def get_attributes_from_file(self):
         print(self.ff_abbreviation)
         dye_table = pandas.read_csv("scripts/dye_properties.csv", header=0)
@@ -697,13 +723,14 @@ if __name__ == '__main__':
                                analysis_parameter=analysis_paras, macv_label_pars=labels)
 
     # 1. get all files ready in new analysis folder
-    #md_analysis.make_data_analysis_results_dirs()
+    # md_analysis.make_data_analysis_results_dirs()
 
     # 2. calculate r_kappa from explicit dyes
-    md_analysis.generate_r_kappa_from_dyes()
+    # md_analysis.generate_r_kappa_from_dyes()
     # 3. calculate r_kappa from macv
-
-
+    dye = Dye(("C3W", 10))
+    pdb_df = dye.read_pdb_file(f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub/analysis/raw/m_tlr_ub_1_s1.pdb")
+    print(pdb_df)
     # md_analysis.parameter_result_file_checker()
     # md_analysis.make_data_analysis_results_dirs(pbc_method="mol")
     # md_analysis.export_pdb_trajectory(10)
