@@ -10,6 +10,7 @@ import shutil
 import pandas as pd
 import mdtraj as md
 import fretraj as ft
+from pdb_cleaner import *
 
 
 class Dye:
@@ -35,9 +36,10 @@ class Dye:
                         splitted_line = line.split()
                         if len(splitted_line) == 11:
                             column_names = ["type", "atom_id", "atom_name", "residue_name", "residue_number", "X", "Y",
-                                            "Z", "occupancy","temperature_factor", "element"]
+                                            "Z", "occupancy", "temperature_factor", "element"]
                         elif len(splitted_line) == 12:
-                            column_names = ["type", "atom_id", "atom_name", "residue_name", "chain_id","residue_number",
+                            column_names = ["type", "atom_id", "atom_name", "residue_name", "chain_id",
+                                            "residue_number",
                                             "X", "Y", "Z", "occupancy", "temperature_factor", "element"]
                         else:
                             print("The PDB file has more columns than expected.")
@@ -46,7 +48,7 @@ class Dye:
             print(f"Cant find file: {pdb_file}"
                   f" Please check if this file and folder exist. Rename the file if necessary.")
 
-        pdb_df = pd.DataFrame(content, columns= column_names)
+        pdb_df = pd.DataFrame(content, columns=column_names)
         return pdb_df
 
     def get_attechment_id_from_pdb(self, pdb_file):
@@ -375,6 +377,7 @@ class DataAnalysis:
             f"gmx trjconv -f {md_dir}/md0/{sim_name}.xtc -s {md_dir}/md0/{sim_name}.tpr -o {md_dir}/md0/{sim_name}_centered.xtc -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc {pbc_method} -center")
         self.run_command(
             f"gmx trjconv -f {md_dir}/md0/{sim_name}.xtc -s {md_dir}/md0/{sim_name}.tpr -o {md_dir}/md0/{sim_name}_s1.pdb -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc mol -center -b 1 -e 10")
+        clean_pdb(f"{md_dir}/md0/{sim_name}_s1.pdb", chain_id=True)
 
     def export_pdb_trajectory(self, time_steps):
         """
@@ -472,6 +475,25 @@ class DataAnalysis:
         self.reduce_gro_file()
 
     # ----------------------MACV calculations---------------------------------------------------------------------------
+    def remove_dyes_from_trajectory(self):
+        """
+        Create a trajectory of MD run without dyes.
+
+        This method creates a ndx file where all atom id's of the gro file are listed except of the dyes or linker atoms
+        . With this ndx file the gromacs trjconv tools produces a xtc file without the dyes. A pdb file of the first
+        state without the dyes ist also produced.
+
+        :return: none
+        """
+        sim_name = self.analysis_parameter["input_structure_name"]
+        self.make_ndx_of_rna_without_dyes(f"{self.analysis_dir}/raw/{sim_name}.gro",
+                                          f'{self.analysis_dir}/Index_Files/RNA_without_Dyes_python.ndx')
+        self.run_command(
+            f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_unlabeled.xtc -n {self.analysis_dir}/Index_Files/RNA_without_Dyes_python.ndx -pbc mol -center")
+        self.run_command(
+            f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_unlabeled_s1.pdb -n {self.analysis_dir}/Index_Files/RNA_without_Dyes_python.ndx -pbc mol -center -b 1 -e 10")
+        clean_pdb(f"{self.analysis_dir}/raw/{sim_name}_unlabeled_s1.pdb", chain_id=True)
+        self.rewrite_atoms_after_unlabeling()
 
     def rewrite_atoms_after_unlabeling(self):
         """
@@ -499,25 +521,48 @@ class DataAnalysis:
             for line in file:
                 print(line.replace("RAO", " RA"), end='')
 
-    def remove_dyes_from_trajectory(self):
-        """
-        Create a trajectory of MD run without dyes.
+    def build_acv_parameter(self) -> dict:
 
-        This method creates a ndx file where all atom id's of the gro file are listed except of the dyes or linker atoms
-        . With this ndx file the gromacs trjconv tools produces a xtc file without the dyes. A pdb file of the first
-        state without the dyes ist also produced.
+        standart_acv_parameter = {
+            "use_LabelLib": False,
+            "grid_spacing": 1.0,
+            "simulation_type": "AV3",
+            "state": 1,
+            "frame_mdtraj": 0,
+            "contour_level_AV": 0,
+            "contour_level_CV": 0.7,
+            "b_factor": 100,
+            "gaussian_resolution": 2,
+            "grid_buffer": 2.0,
+            "transparent_AV": True
+        }
 
-        :return: none
-        """
-        sim_name = self.analysis_parameter["input_structure_name"]
-        self.make_ndx_of_rna_without_dyes(f"{self.analysis_dir}/raw/{sim_name}.gro",
-                                          f'{self.analysis_dir}/Index_Files/RNA_without_Dyes_python.ndx')
-        self.run_command(
-            f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_unlabeled.xtc -n {self.analysis_dir}/Index_Files/RNA_without_Dyes_python.ndx -pbc mol -center")
-        self.run_command(
-            f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_unlabeled_s1.pdb -n {self.analysis_dir}/Index_Files/RNA_without_Dyes_python.ndx -pbc mol -center -b 1 -e 10")
+        donor_analysis_pars = self.analysis_parameter["Donor_residue_name_number"]
+        acceptor_analysis_pars = self.analysis_parameter["Acceptor_residue_name_number"]
 
-        self.rewrite_atoms_after_unlabeling()
+        path_to_pdb = f"{self.analysis_dir}/raw/{self.analysis_parameter['input_structure_name']}_unlabeled_s1.pdb"
+        donor_ap = self.donor_dye.get_attechment_id_from_pdb(path_to_pdb)
+        acceptor_ap = self.acceptor_dye.get_attechment_id_from_pdb(path_to_pdb)
+
+        donor_position = f"{self.macv_label_pars['Donor']['name']}-{donor_analysis_pars[1]}-{donor_ap[1]}"
+        acceptor_position = f"{self.macv_label_pars['Acceptor']['name']}-{acceptor_analysis_pars[1]}-{acceptor_ap[1]}"
+
+        donor_params = {}
+        donor_params = self.macv_label_pars["Donor"]
+        donor_params["attach_id"] = donor_ap[0]
+        donor_params.update(standart_acv_parameter)
+
+        acceptor_params = {}
+        acceptor_params = dye_acv_parameter["Acceptor"]
+        acceptor_params["attach_id"] = acceptor_ap[0]
+        acceptor_params.update(standart_acv_parameter)
+
+        labels = {"Position": {}, "Distance": {}}
+        labels["Position"][donor_position] = donor_params
+        labels["Position"][acceptor_position] = acceptor_params
+        labels["Distance"].update(self.macv_label_pars["Distance"])
+
+        return labels
 
     def get_selected_frames(self):
         time = self.md_traj.time[-1]
@@ -533,17 +578,22 @@ class DataAnalysis:
         s_frames = [int(max_time + 1), int(time_step)]
         return s_frames
 
-    def calculate_macv(self):
+    def calculate_macv(self, macv_parameter):
         s_frames = self.get_selected_frames()
         selected_frames = range(0, s_frames[0], s_frames[1])
         print(s_frames)
-        fret = ft.cloud.pipeline_frames(self.md_traj, "Cy3-65-O3'", "Cy5-10-C5", self.macv_label_pars, selected_frames,
-                                        'Cy3-Cy5')
-        ft.cloud.save_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_mcv_10000s.pkl', fret)
+
+        donor_site = list(macv_parameter["Position"].keys())[0]
+        acceptor_site = list(macv_parameter["Position"].keys())[1]
+        fret_pair = list(macv_parameter["Distance"].keys())[0]
+
+        fret = ft.cloud.pipeline_frames(self.md_traj, donor_site, acceptor_site, macv_parameter, selected_frames,
+                                        fret_pair)
+        ft.cloud.save_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_macv_10000s.pkl', fret)
         return fret
 
     def load_macv(self):
-        fret = ft.cloud.load_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_mcv_10000s.pkl')
+        fret = ft.cloud.load_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_macv.pkl')
         self.fret_macv = fret
         print(len(fret))
         return fret
@@ -552,7 +602,7 @@ class DataAnalysis:
         s_frames = self.get_selected_frames()
         fret_traj = ft.cloud.Trajectory(self.fret_macv, timestep=s_frames[1] * int(self.md_traj.timestep),
                                         kappasquare=0.66)
-        fret_traj.save_traj(f'{self.analysis_dir}/macv/R_kappa_CV.dat', format='txt', R_kappa_only=True, units='nm',
+        fret_traj.save_traj(f'{self.analysis_dir}/macv/R_kappa_ACV.dat', format='txt', R_kappa_only=True, units='nm',
                             header=False)
         fret_traj.dataframe.head()
 
@@ -560,14 +610,17 @@ class DataAnalysis:
         self.make_dir(f"{self.analysis_dir}/macv")
         self.remove_dyes_from_trajectory()
         self.rewrite_atoms_after_unlabeling()
+        macv_parameter = self.build_acv_parameter()
         self.set_md_traj()
 
         if calculate_macv:
-            self.fret_macv = self.calculate_macv()
+            self.fret_macv = self.calculate_macv(macv_parameter)
         else:
             self.fret_macv = self.load_macv()
 
         self.write_rkappa_file_from_macv()
+
+
 
     # -------------------------explicit dye simulation handling---------------------------------------------------------
 
@@ -579,32 +632,6 @@ class DataAnalysis:
             coords = list(np.squeeze(acc_c14.positions / 10))
             acc_coords.append(coords)
         return np.array(acc_coords)
-
-    def get_atom_ids(self, dye_filter: list) -> pd.DataFrame:
-        """
-        Return atom id's from a given residue number and a residue name.
-
-        :param dye_filter: List of Number of residue (10) and Name of residue (C5W or RU)
-        :return: Dataframe of residue id's with other information.
-        """
-
-        if os.path.isfile(f"{self.analysis_dir}/raw/{self.input_structure_name}.gro"):
-            df_list = []
-            for filter_set in dye_filter:
-                with open(f"{self.analysis_dir}/raw/{self.input_structure_name}.gro", 'r') as f:
-                    next(f)
-                    next(f)
-                    for i, line in enumerate(f):
-                        if not any(value in line for value in "SOL"):
-                            split_line = line.split()
-                            if split_line[0].startswith(filter_set[0]):
-                                if split_line[1] == filter_set[1]:
-                                    df_list.append([split_line[0], split_line[1], split_line[2]])
-            return pd.DataFrame(df_list, columns=["Num/Res", "Atom name", "ID"])
-        else:
-            print(
-                f"There should be a file named {self.input_structure_name}.gro in the folder {self.analysis_dir}/raw/."
-                f" Please check if this file and folder exist. Rename the file if necessary.")
 
     def write_coordinate_file(self, file_name: str, dipole):
         """
@@ -679,65 +706,41 @@ if __name__ == '__main__':
         "input_structure_name": "m_tlr_ub_1",
         "Donor_residue_name_number": ("C3W", 10),
         "Acceptor_residue_name_number": ("C5W", 45),
-
     }
 
-    labels = {"Position":
-                  {"sCy5-10-C5":
-                       {"attach_id": 310,
-                        "mol_selection": "all",
-                        "linker_length": 20,
-                        "linker_width": 3.5,
-                        "dye_radius1": 9.5,
-                        "dye_radius2": 3,
-                        "dye_radius3": 1.5,
-                        "cv_fraction": 0.99,
-                        "cv_thickness": 3,
-                        "use_LabelLib": False,
-                        "grid_spacing": 1.0,
-                        "simulation_type": "AV3",
-                        "state": 1,
-                        "frame_mdtraj": 0,
-                        "contour_level_AV": 0,
-                        "contour_level_CV": 0.7,
-                        "b_factor": 100,
-                        "gaussian_resolution": 2,
-                        "grid_buffer": 2.0,
-                        "transparent_AV": True
-                        },
-                   "sCy3-65-O3'":
-                       {"attach_id": 2052,
-                        "mol_selection": "all",
-                        "linker_length": 20,
-                        "linker_width": 3.5,
-                        "dye_radius1": 8.0,
-                        "dye_radius2": 3,
-                        "dye_radius3": 1.5,
-                        "cv_fraction": 0.99,
-                        "cv_thickness": 3,
-                        "use_LabelLib": False,
-                        "grid_spacing": 1.0,
-                        "simulation_type": "AV3",
-                        "state": 1,
-                        "frame_mdtraj": 0,
-                        "contour_level_AV": 0,
-                        "contour_level_CV": 0.7,
-                        "b_factor": 100,
-                        "gaussian_resolution": 2,
-                        "grid_buffer": 2.0,
-                        "transparent_AV": True},
-                   },
-              "Distance": {"sCy3-sCy5":
-                               {"R0": 54,
-                                "n_dist": 10 ** 6}
-                           }
-              }
+    dye_acv_parameter = {
+        "Acceptor": {
+            "name": "sCy5",
+            "linker_length": 20,
+            "linker_width": 3.5,
+            "dye_radius1": 9.5,
+            "dye_radius2": 3,
+            "dye_radius3": 1.5,
+            "cv_fraction": 0.99,
+            "cv_thickness": 3
+        },
+        "Donor": {
+            "name": "sCy3",
+            "linker_length": 20,
+            "linker_width": 3.5,
+            "dye_radius1": 8.0,
+            "dye_radius2": 3,
+            "dye_radius3": 1.5,
+            "cv_fraction": 0.99,
+            "cv_thickness": 3,
+        },
+        "Distance": {"sCy3-sCy5":
+                         {"R0": 54,
+                          "n_dist": 10 ** 6}
+                     }
+
+    }
 
     print(os.getcwd())
 
     md_analysis = DataAnalysis(working_dir="/home/felix/Documents/md_pipeline_testfolder",
                                path_sim_results="/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub",
-                               analysis_parameter=analysis_paras, macv_label_pars=labels)
+                               analysis_parameter=analysis_paras, macv_label_pars=dye_acv_parameter)
 
     # 1. get all files ready in new analysis folder
     # md_analysis.make_data_analysis_results_dirs()
@@ -745,6 +748,6 @@ if __name__ == '__main__':
     # 2. calculate r_kappa from explicit dyes
     # md_analysis.generate_r_kappa_from_dyes()
     # 3. calculate r_kappa from macv
-    dye = Dye(("C3W", 63))
-    pdb = dye.get_attechment_id_from_pdb(f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub/analysis/raw/m_tlr_ub_1_s1.pdb")
-    print(pdb)
+    # dye = Dye(("C3W", 63))
+    # pdb = dye.get_attechment_id_from_pdb(f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub/analysis/raw/m_tlr_ub_1_s1.pdb")
+    # print(pdb)
