@@ -534,7 +534,8 @@ class DataAnalysis:
             "b_factor": 100,
             "gaussian_resolution": 2,
             "grid_buffer": 2.0,
-            "transparent_AV": True
+            "transparent_AV": True,
+            "mol_selection": "all"
         }
 
         donor_analysis_pars = self.analysis_parameter["Donor_residue_name_number"]
@@ -586,6 +587,8 @@ class DataAnalysis:
         donor_site = list(macv_parameter["Position"].keys())[0]
         acceptor_site = list(macv_parameter["Position"].keys())[1]
         fret_pair = list(macv_parameter["Distance"].keys())[0]
+
+        print(donor_site,acceptor_site,fret_pair)
 
         fret = ft.cloud.pipeline_frames(self.md_traj, donor_site, acceptor_site, macv_parameter, selected_frames,
                                         fret_pair)
@@ -748,6 +751,10 @@ if __name__ == '__main__':
     # 2. calculate r_kappa from explicit dyes
     # md_analysis.generate_r_kappa_from_dyes()
     # 3. calculate r_kappa from macv
+    #md_analysis.make_dir(f"{md_analysis.analysis_dir}/macv")
+    #md_analysis.remove_dyes_from_trajectory()
+    #md_analysis.rewrite_atoms_after_unlabeling()
+    md_analysis.genarate_rkappa_file_from_macv()
     # dye = Dye(("C3W", 63))
     # pdb = dye.get_attechment_id_from_pdb(f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub/analysis/raw/m_tlr_ub_1_s1.pdb")
     # print(pdb)

@@ -10,6 +10,8 @@ class Modeling:
         self.modeling_parameter = modeling_parameter
         self.sequence = self.read_fasta_file()
 
+
+
     @staticmethod
     def check_os():
         """
@@ -39,14 +41,33 @@ class Modeling:
 
     @staticmethod
     def run_command(command: str):
-        process = subprocess.Popen(["bash", "-c", command], stdout=subprocess.PIPE, text=True)
+        process = subprocess.Popen(["bash", "-c", command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, text=True)
         while process.stdout.readable():
             line = process.stdout.readline()
 
             if not line:
                 break
 
-            print(line.strip())
+            print(line)
+
+
+    def run_command_rosetta(command: str):
+        counter = 1
+        line_finders = ["--------------", "Scores", "fa_atr", "fa_rep", "fa_intra_rep", "lk_nonpolar", "fa_elec_rna_phos_phos", "rna_torsion", "suiteness_bonus", "rna_sugar_close", "fa_stack", "stack_elec", "geom_sol_fast", "hbond_sr_bb_sc", "hbond_lr_bb_sc", "hbond_sc", "ref", "free_suite", "free_2HOprime", "intermol", "other_pose", "loop_close", "linear_chainbreak"]
+
+        process = subprocess.Popen(["bash", "-c", command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, text=True)
+        print(f"modeling structure {counter}")
+        while process.stdout.readable():
+            line = process.stdout.readline()
+
+            if not line:
+                break
+            if any(s in line for s in line_finders):
+                print(line)
+            if "S_" in line:
+                print(line)
+                counter=+1
+                print(f"modeling structure {counter}")
 
     def make_result_dir(self, directory_name):
         """
@@ -156,6 +177,9 @@ class Modeling:
                 f"-minimize_rna {self.modeling_parameter['minimize_rna']} " \
                 f"-cycles {self.modeling_parameter['cycles']}" \
 
+        if self.modeling_parameter["overwrite"]:
+            flags = f"{flags} -overwrite"
+
         return flags
 
     def predict_3d_structure(self, path_2d_structure_file: str) -> None:
@@ -199,10 +223,11 @@ class Modeling:
 if __name__ == '__main__':
     rosetta_parameter = {
         "path_to_rosetta": "rna_denovo.default.linuxgccrelease",
-        "nstruct": 100,
+        "nstruct": 2,
         "fasta": "rna_tlr_sequence.fasta",
         "minimize_rna": True,
-        "cycles": 2000
+        "cycles": 2000,
+        "overwrite": True,
     }
 
     print(os.getcwd())
@@ -210,6 +235,6 @@ if __name__ == '__main__':
     test = Modeling(working_dir=f"{os.getcwd()}/data",
                     file_path_sequence=f"{os.getcwd()}/data/rna_tlr_sequence.fasta",
                     modeling_parameter=rosetta_parameter)
-    test.predict_2d_structure()
+    #test.predict_2d_structure()
     test.predict_3d_structure(path_2d_structure_file=f"{os.getcwd()}/data/secondary_prediction/dot_bracket.secstruct")
-    test.extract_pdb(1000)
+    #test.extract_pdb(1000)
