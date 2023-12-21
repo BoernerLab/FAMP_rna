@@ -1,0 +1,7 @@
+{
+  "path_to_rosetta": "rna_denovo.default.linuxgccrelease",
+  "nstruct": 100,
+  "fasta": "rna_tlr_sequence.fasta",
+  "minimize_rna": true,
+  "cycles": 2000
+}

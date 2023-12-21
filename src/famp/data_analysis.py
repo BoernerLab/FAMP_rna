@@ -10,7 +10,7 @@ import shutil
 import pandas as pd
 import mdtraj as md
 import fretraj as ft
-from pdb_cleaner import *
+from famp.pdb_cleaner import *
 
 
 class Dye:

@@ -1,0 +1,39 @@
+{
+    "dyes": {
+        "tauD": 1.14,
+        "tauA": 1.5,
+        "QD": 0.2,
+        "QA": 0.35,
+        "etaD": 0.37,
+        "etaA": 1,
+        "dipole_angle_abs_em": 10.5
+    },
+    "sampling": {
+        "nbursts": 10000,
+        "skipframesatstart": 0,
+        "skipframesatend": 0,
+        "multiprocessing": true
+    },
+    "fret": {
+        "R0": 54,
+        "kappasquare": 0.6666,
+        "gamma": true,
+        "quenching_radius": 10
+    },
+    "species": {
+        "name": ["all"],
+        "unix_pattern_rkappa": ["*.dat"],
+        "unix_pattern_don_coords": ["Acceptor*.txt"],
+        "unix_pattern_acc_coords": ["Donor*.txt"],
+        "probability": [1],
+        "n_trajectory_splits": null
+    },
+    "bursts": {
+        "lower_limit": 10,
+        "upper_limit": 50,
+        "lambda": -2.3,
+        "QY_correction": false,
+        "averaging": "all",
+        "burst_size_file": "/Users/felixerichson/Documents/Simulationen/Simulations_KLTL_complete/BTL_Paper/raw/burst_sizes_2.dat"
+    }
+}

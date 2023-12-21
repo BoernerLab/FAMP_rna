@@ -1,0 +1,18 @@
+# in _config.yml
+title: "FAMP"
+author: Felix Erichson, M.Sc.
+logo: Images/Github_readme.png
+copyright: "2024"  # Copyright year to be placed in the footer
+execute:
+  execute_notebooks: "off"
+repository:
+  url: https://github.com/felixErichson/FAMP_rna
+  path_to_book: docs
+  branch: main
+html:
+  use_repository_button: true
+bibtex_bibfiles:
+  - references.bib
+sphinx:
+  config:
+    bibtex_reference_style: label

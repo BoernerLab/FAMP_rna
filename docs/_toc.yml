@@ -1,0 +1,25 @@
+format: jb-book
+root: index_page
+parts:
+    - caption: Getting Started
+      chapters:
+      - file: content/installation
+    - caption: Programm Description
+      chapters:
+        - file: content/prog_modeling
+        - file: content/prog_simulation
+        - file: content/prog_data_analysis
+        - file: content/parameter
+    - caption: FAMP Description
+      chapters:
+        - file: content/desc_pipeline
+        - file: content/desc_modeling
+        - file: content/desc_simulation
+        - file: content/desc_data_analysis
+    - caption: Protocol Modeling
+      chapters:
+        - file: content/prot_kb_modeling
+        - file: content/prot_pymol_remodeling
+    - caption: References
+      chapters:
+        - file: references

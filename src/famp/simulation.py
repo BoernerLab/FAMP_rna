@@ -2,7 +2,7 @@ import subprocess
 import re
 import os
 import shutil
-from exceptions import GromacsMdrunError, GromacsEditconfError, GromacsGenionError, GromacsGromppError, \
+from famp.exceptions import GromacsMdrunError, GromacsEditconfError, GromacsGenionError, GromacsGromppError, \
     GromacsSolvateError, GromacsPdb2gmxError
 
 

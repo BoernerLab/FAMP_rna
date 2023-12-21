@@ -1,0 +1,8 @@
+{
+        "simulation_name": "input",
+        "input_structure_name": "input",
+        "mean_donor_atom": 2126,
+        "donor_dipole": [2123, 2155],
+        "mean_acceptor_atom": 304,
+        "acceptor_dipole": [311, 334]
+    }
