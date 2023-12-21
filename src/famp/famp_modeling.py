@@ -223,18 +223,18 @@ class Modeling:
 if __name__ == '__main__':
     rosetta_parameter = {
         "path_to_rosetta": "rna_denovo.default.linuxgccrelease",
-        "nstruct": 2,
-        "fasta": "rna_tlr_sequence.fasta",
+        "nstruct": 500,
+        "fasta": "BTL.fasta",
         "minimize_rna": True,
-        "cycles": 2000,
+        "cycles": 10000,
         "overwrite": True,
     }
 
     print(os.getcwd())
     params = {}
-    test = Modeling(working_dir=f"{os.getcwd()}/data",
-                    file_path_sequence=f"{os.getcwd()}/data/rna_tlr_sequence.fasta",
+    BTL_modeling = Modeling(working_dir=f"/home/felix/Documents/Rosetta_KLTL_ensemble_unbound",
+                    file_path_sequence=f"/home/felix/Documents/Rosetta_KLTL_ensemble_unbound/BTL.fasta",
                     modeling_parameter=rosetta_parameter)
-    #test.predict_2d_structure()
-    test.predict_3d_structure(path_2d_structure_file=f"{os.getcwd()}/data/secondary_prediction/dot_bracket.secstruct")
-    #test.extract_pdb(1000)
+    #BTL_modeling.predict_2d_structure()
+    BTL_modeling.predict_3d_structure(path_2d_structure_file=f"/home/felix/Documents/Rosetta_KLTL_ensemble_unbound/secondary_prediction/dot_bracket.secstruct")
+    BTL_modeling.extract_pdb(500)

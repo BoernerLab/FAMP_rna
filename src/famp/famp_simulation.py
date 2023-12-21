@@ -223,7 +223,7 @@ class MDSimulation:
         copied from the scripts folder to the newly created directory.
 
         """
-        src_folder = "./scripts/gromacs"
+        src_folder = "scripts/gromacs"
         dst_folder = self.working_dir + f"/{self.md_parameter['simulation_name']}"
 
         if os.path.exists(dst_folder) and os.path.isdir(dst_folder):
@@ -440,6 +440,8 @@ class MDSimulation:
 
         self.make_result_dir(f"{self.md_parameter['simulation_name']}/md0")
 
+        self.apply_restraints()
+
         self.run_gromacs_command(
             f"gmx grompp "
             f"-f {self.path_simulation_folder}/mdp/md0.mdp "
@@ -588,17 +590,17 @@ class MDSimulation:
 
 if __name__ == '__main__':
     simulation_parameter = {
-        "simulation_name": "m_tlr_ub_final_test",
+        "simulation_name": "KLTL_unbound_res_showcase",
         "c_magnesium_ions[mol/l]": 0.02,
-        "simulation_time[ns]": 1,
+        "simulation_time[ns]": 0.5,
         "temperature[°C]": 25,
         "dist_to_box[nm]": "1",
         "water_model": "tip3p",
         "distance_restraints": True
     }
     print(os.getcwd())
-    hairpin_labeled = MDSimulation(working_dir=f"/home/felix/Documents/md_pipeline_testfolder",
-                                   file_path_input=f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub_1.pdb",
+    hairpin_labeled = MDSimulation(working_dir=f"/home/felix/Documents/md_KLTL_restraints_showcase",
+                                   file_path_input=f"/home/felix/Documents/md_KLTL_restraints_showcase/KLTL_unbound_showcase.pdb",
                                    md_parameter=simulation_parameter)
 
     hairpin_labeled.prepare_new_md_run()
@@ -606,36 +608,66 @@ if __name__ == '__main__':
     hairpin_labeled.solvate_molecule()
 
     restraint_1 = {
-        "atom_id_1": 250,
-        "atom_id_2": 1831,
+        "atom_id_1": 181,
+        "atom_id_2": 1042,
         "lower_distance_limit": 0.0,
-        "atoms_distance": 0.32,
+        "atoms_distance": 0.30,
         "upper_distance_limit": 0.5,
-        "force_constant_fraction": 0.5,
+        "force_constant_fraction": 0.25,
 
     }
 
     restraint_2 = {
-        "atom_id_1": 250,
-        "atom_id_2": 1819,
+        "atom_id_1": 214,
+        "atom_id_2": 1042,
         "lower_distance_limit": 0.0,
-        "atoms_distance": 0.28,
+        "atoms_distance": 0.30,
         "upper_distance_limit": 0.5,
-        "force_constant_fraction": 0.5,
+        "force_constant_fraction": 0.25,
 
     }
 
     restraint_3 = {
-        "atom_id_1": 214,
-        "atom_id_2": 1819,
+        "atom_id_1": 226,
+        "atom_id_2": 1863,
         "lower_distance_limit": 0.0,
-        "atoms_distance": 0.28,
+        "atoms_distance": 0.27,
         "upper_distance_limit": 0.5,
-        "force_constant_fraction": 0.5,
+        "force_constant_fraction": 0.25,
+    }
+
+    restraint_4 = {
+        "atom_id_1": 271,
+        "atom_id_2": 1863,
+        "lower_distance_limit": 0.0,
+        "atoms_distance": 0.33,
+        "upper_distance_limit": 0.5,
+        "force_constant_fraction": 0.25,
+    }
+
+    restraint_5 = {
+        "atom_id_1": 220,
+        "atom_id_2": 1863,
+        "lower_distance_limit": 0.0,
+        "atoms_distance": 0.27,
+        "upper_distance_limit": 0.5,
+        "force_constant_fraction": 0.25,
+    }
+
+    restraint_6 = {
+        "atom_id_1": 193,
+        "atom_id_2": 1896,
+        "lower_distance_limit": 0.0,
+        "atoms_distance": 0.27,
+        "upper_distance_limit": 0.5,
+        "force_constant_fraction": 0.25,
     }
 
     hairpin_labeled.add_restraint(restraint_1)
     hairpin_labeled.add_restraint(restraint_2)
     hairpin_labeled.add_restraint(restraint_3)
-    hairpin_labeled.apply_restraints()
+    hairpin_labeled.add_restraint(restraint_4)
+    hairpin_labeled.add_restraint(restraint_5)
+    hairpin_labeled.add_restraint(restraint_6)
+    #hairpin_labeled.apply_restraints()
     hairpin_labeled.run_simulation_steps()
