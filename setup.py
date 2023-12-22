@@ -8,7 +8,7 @@ setup(
     author="Felix Erichson",
     license="GPL-3.0 license",
     classifiers=["Programming Language :: Python :: 3"],
-    scripts=["src/famp/scripts/mac_os/rosetta/extract_pdb.sh"],
-    package_data={'': ['src/famp/scripts/gromacs']},
+    scripts=["src/famp/scripts/mac_os/rosetta/mac_extract_pdb.sh","src/famp/scripts/linux/rosetta/linux_extract_pdb.sh"],
+    package_data={'': ['src/famp/scripts/gromacs/mdp']},
     include_package_data=True,
 )

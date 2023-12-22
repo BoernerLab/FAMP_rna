@@ -1,6 +1,7 @@
 from sys import platform
 import subprocess
 import os
+import pathlib
 
 
 class Modeling:
@@ -9,8 +10,7 @@ class Modeling:
         self.file_path_sequence = file_path_sequence
         self.modeling_parameter = modeling_parameter
         self.sequence = self.read_fasta_file()
-
-
+        self.source_path = pathlib.Path(__file__).parent.resolve()
 
     @staticmethod
     def check_os():
@@ -206,14 +206,14 @@ class Modeling:
             number_of_pdb = self.modeling_parameter["nstruct"]
 
         if platform == "linux" or platform == "linux2":
-            self.run_command(f"./scripts/linux/rosetta/extract_pdb.sh "
+            self.run_command(f"linux_extract_pdb.sh "
                              f"-d {self.working_dir}/rosetta_results/ "
                              f"-n {number_of_pdb}"
                              f" -m true "
                              f"-s {self.working_dir}/rosetta_results/silent_out.out")
 
         elif platform == "darwin":
-            self.run_command(f"extract_pdb.sh "
+            self.run_command(f"mac_extract_pdb.sh "
                              f"-d {self.working_dir}/rosetta_results/ "
                              f"-n {number_of_pdb} "
                              f"-m true "
@@ -236,5 +236,5 @@ if __name__ == '__main__':
                     file_path_sequence=f"/home/felix/Documents/Rosetta_KLTL_ensemble_unbound/BTL.fasta",
                     modeling_parameter=rosetta_parameter)
     #BTL_modeling.predict_2d_structure()
-    BTL_modeling.predict_3d_structure(path_2d_structure_file=f"/home/felix/Documents/Rosetta_KLTL_ensemble_unbound/secondary_prediction/dot_bracket.secstruct")
-    BTL_modeling.extract_pdb(500)
+    #BTL_modeling.predict_3d_structure(path_2d_structure_file=f"/home/felix/Documents/Rosetta_KLTL_ensemble_unbound/secondary_prediction/dot_bracket.secstruct")
+    #BTL_modeling.extract_pdb(500)

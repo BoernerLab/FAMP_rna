@@ -2,12 +2,14 @@ import subprocess
 import re
 import os
 import shutil
+import pathlib
 from famp.exceptions import GromacsMdrunError, GromacsEditconfError, GromacsGenionError, GromacsGromppError, \
     GromacsSolvateError, GromacsPdb2gmxError
 
 
 class MDSimulation:
     def __init__(self, working_dir: str, file_path_input: str, md_parameter: dict) -> None:
+        self.source_path = pathlib.Path(__file__).parent.resolve()
         self.working_dir = self.create_working_dir(working_dir)
         self.file_path_input = file_path_input
         self.md_parameter = md_parameter
@@ -223,7 +225,7 @@ class MDSimulation:
         copied from the scripts folder to the newly created directory.
 
         """
-        src_folder = "scripts/gromacs"
+        src_folder = f"{self.source_path}/scripts/gromacs"
         dst_folder = self.working_dir + f"/{self.md_parameter['simulation_name']}"
 
         if os.path.exists(dst_folder) and os.path.isdir(dst_folder):
@@ -262,15 +264,15 @@ class MDSimulation:
 
         self.copy_files_to_sim_dir()
         self.copy_input_model()
-        self.change_temperature_in_mdp_files(simulation_parameter["temperature[°C]"])
-        self.change_sim_time_in_md0(simulation_parameter["simulation_time[ns]"])
+        self.change_temperature_in_mdp_files(self.md_parameter["temperature[°C]"])
+        self.change_sim_time_in_md0(self.md_parameter["simulation_time[ns]"])
 
     def update_parameter(self):
         """
         Function to update the parameters simulation time and temperature within the mdp files.
         """
-        self.change_temperature_in_mdp_files(simulation_parameter["temperature[°C]"])
-        self.change_sim_time_in_md0(simulation_parameter["simulation_time[ns]"])
+        self.change_temperature_in_mdp_files(self.md_parameter["temperature[°C]"])
+        self.change_sim_time_in_md0(self.md_parameter["simulation_time[ns]"])
 
     def solvate_molecule(self) -> None:
         """
@@ -351,7 +353,7 @@ class MDSimulation:
             f"-po {self.path_simulation_folder}/em/{self.input_structure_name}.mdp "
             f"-maxwarn 2")
 
-        if simulation_parameter["c_magnesium_ions[mol/l]"] > 0:
+        if self.md_parameter["c_magnesium_ions[mol/l]"] > 0:
             self.make_ndx_of_SOL(f"{self.path_simulation_folder}/em/{self.input_structure_name}.gro",
                                  f"{self.path_simulation_folder}/em/SOL.ndx")
 
@@ -363,7 +365,7 @@ class MDSimulation:
                 f"-nname Cl "
                 f"-pname MG "
                 f"-pq 2 "
-                f"-conc {simulation_parameter['c_magnesium_ions[mol/l]']} "
+                f"-conc {self.md_parameter['c_magnesium_ions[mol/l]']} "
                 f"-n {self.path_simulation_folder}/em/SOL.ndx")
 
             self.run_gromacs_command(
@@ -577,7 +579,7 @@ class MDSimulation:
         The function checks the simulation parameters whether distance restraints should be activated or
         deactivated and executes the corresponding functions.
         """
-        if simulation_parameter['distance_restraints']:
+        if self.md_parameter['distance_restraints']:
             if not self.restraints:
                 print('There are no restraints to add. Restraints are deactivated')
                 self.deactivate_restraints_mdp()
