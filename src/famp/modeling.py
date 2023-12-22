@@ -213,7 +213,7 @@ class Modeling:
                              f"-s {self.working_dir}/rosetta_results/silent_out.out")
 
         elif platform == "darwin":
-            self.run_command(f"./scripts/mac_os/rosetta/extract_pdb.sh "
+            self.run_command(f"extract_pdb.sh "
                              f"-d {self.working_dir}/rosetta_results/ "
                              f"-n {number_of_pdb} "
                              f"-m true "
