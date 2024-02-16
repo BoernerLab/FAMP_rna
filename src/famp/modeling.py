@@ -9,8 +9,8 @@ class Modeling:
         self.working_dir = working_dir
         self.file_path_sequence = file_path_sequence
         self.modeling_parameter = modeling_parameter
-        self.sequence = self.read_fasta_file()
         self.source_path = pathlib.Path(__file__).parent.resolve()
+        self.sequence = self.read_fasta_file()
 
     @staticmethod
     def check_os():
@@ -41,14 +41,22 @@ class Modeling:
 
     @staticmethod
     def run_command(command: str):
-        process = subprocess.Popen(["bash", "-c", command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, text=True)
-        while process.stdout.readable():
-            line = process.stdout.readline()
+        try:
+            output = subprocess.check_output(
+                command, stderr=subprocess.STDOUT, shell=True,
+                universal_newlines=True)
+        except subprocess.CalledProcessError as exc:
+            print("Status : FAIL", exc.returncode, exc.output)
 
-            if not line:
-                break
 
-            print(line)
+        #process = subprocess.Popen(["bash", "-c", command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, text=True)
+        #while process.stdout.readable():
+        #    line = process.stdout.readline()
+
+        #    if not line:
+        #        break
+
+        #    print(line)
 
 
     def run_command_rosetta(command: str):
@@ -202,18 +210,22 @@ class Modeling:
         :return: None
 
         """
+        #TODO not check the parameters. Check the number of structures in .out
         if number_of_pdb > self.modeling_parameter["nstruct"]:
             number_of_pdb = self.modeling_parameter["nstruct"]
 
+        script_source_dir_linux = f"{self.source_path}/scripts/linux/rosetta/"
+        script_source_dir_mac = f"{self.source_path}/scripts/mac_os/rosetta/"
+
         if platform == "linux" or platform == "linux2":
-            self.run_command(f"linux_extract_pdb.sh "
+            self.run_command(f"{script_source_dir_linux}linux_extract_pdb.sh "
                              f"-d {self.working_dir}/rosetta_results/ "
                              f"-n {number_of_pdb}"
                              f" -m true "
                              f"-s {self.working_dir}/rosetta_results/silent_out.out")
 
         elif platform == "darwin":
-            self.run_command(f"mac_extract_pdb.sh "
+            self.run_command(f"{script_source_dir_linux}mac_extract_pdb.sh "
                              f"-d {self.working_dir}/rosetta_results/ "
                              f"-n {number_of_pdb} "
                              f"-m true "
@@ -236,5 +248,5 @@ if __name__ == '__main__':
                     file_path_sequence=f"/home/felix/Documents/Rosetta_KLTL_ensemble_unbound/BTL.fasta",
                     modeling_parameter=rosetta_parameter)
     #BTL_modeling.predict_2d_structure()
-    #BTL_modeling.predict_3d_structure(path_2d_structure_file=f"/home/felix/Documents/Rosetta_KLTL_ensemble_unbound/secondary_prediction/dot_bracket.secstruct")
-    #BTL_modeling.extract_pdb(500)
+    BTL_modeling.predict_3d_structure(path_2d_structure_file=f"/home/felix/Documents/Rosetta_KLTL_ensemble_unbound/secondary_prediction/dot_bracket.secstruct")
+    BTL_modeling.extract_pdb(500)

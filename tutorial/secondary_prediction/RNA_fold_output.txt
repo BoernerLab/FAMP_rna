@@ -1,3 +1,0 @@
->RNA_Hairpin sequence
-caauauuuauuaauaucuuccggauauuaauaaauauug
-((((((((((((((((((...)))))))))))))))))) (-15.90)
