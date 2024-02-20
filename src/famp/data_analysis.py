@@ -4,6 +4,7 @@ import MDAnalysis as mda
 import numpy as np
 import pandas
 from numpy import linalg as LA
+import pathlib
 import re
 import fileinput
 import shutil
@@ -15,6 +16,7 @@ from famp.pdb_cleaner import *
 
 class Dye:
     def __init__(self, dye_parameter: tuple) -> None:
+        self.source_path = pathlib.Path(__file__).parent.resolve()
         self.ff_abbreviation = dye_parameter[0]
         self.attachment_residue = dye_parameter[1]
         self.dye_name = None
@@ -71,7 +73,7 @@ class Dye:
 
     def get_attributes_from_file(self):
         print(self.ff_abbreviation)
-        dye_table = pandas.read_csv("scripts/dye_properties.csv", header=0)
+        dye_table = pandas.read_csv(f"{self.source_path}/scripts/dye_properties.csv", header=0)
         dye_row = dye_table.loc[dye_table["dye_abbreviation"] == self.ff_abbreviation]
         self.dye_name = dye_row["dye_name"].to_string(index=False)
         self.central_c = dye_row["central_c"].to_string(index=False)
@@ -104,6 +106,7 @@ class Dye:
 
 class DataAnalysis:
     def __init__(self, working_dir, path_sim_results: str, analysis_parameter: dict, macv_label_pars: dict) -> None:
+        self.source_path = pathlib.Path(__file__).parent.resolve()
         self.working_dir = working_dir
         self.path_sim_results = path_sim_results
         self.analysis_parameter = analysis_parameter
@@ -554,7 +557,7 @@ class DataAnalysis:
         donor_params.update(standart_acv_parameter)
 
         acceptor_params = {}
-        acceptor_params = dye_acv_parameter["Acceptor"]
+        acceptor_params = self.macv_label_pars["Acceptor"]
         acceptor_params["attach_id"] = acceptor_ap[0]
         acceptor_params.update(standart_acv_parameter)
 
@@ -747,7 +750,7 @@ if __name__ == '__main__':
 
     # 1. get all files ready in new analysis folder
     md_analysis.make_data_analysis_results_dirs()
-    #md_analysis.export_pdb_trajectory(1)
+    md_analysis.export_pdb_trajectory(1)
     # 2. calculate r_kappa from explicit dyes
     md_analysis.generate_r_kappa_from_dyes()
     # 3. calculate r_kappa from macv
