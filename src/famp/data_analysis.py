@@ -55,7 +55,7 @@ class Dye:
 
     def get_attechment_id_from_pdb(self, pdb_file):
         pdb_df = self.read_pdb_file(pdb_file)
-        print(pdb_file)
+        #print(pdb_file)
         residue_numbers = pdb_df["residue_number"].unique()
         attechment_atom = ""
         if self.attachment_residue == 1:
@@ -69,6 +69,7 @@ class Dye:
             attechment_atom = "C5"
 
         atom_id = int(atom_id["atom_id"])
+        print(f"Attechmentpoint for {self.attachment_residue} {self.ff_abbreviation}: {atom_id}, {attechment_atom}")
         return atom_id, attechment_atom
 
     def get_attributes_from_file(self):
