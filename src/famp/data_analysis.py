@@ -609,15 +609,15 @@ class DataAnalysis:
         print(len(fret))
         return fret
 
-    def write_rkappa_file_from_macv(self):
+    def write_rkappa_file_from_macv(self, file_name):
         s_frames = self.get_selected_frames()
         fret_traj = ft.cloud.Trajectory(self.fret_macv, timestep=s_frames[1] * int(self.md_traj.timestep),
                                         kappasquare=0.66)
-        fret_traj.save_traj(f'{self.analysis_dir}/macv/R_kappa_ACV.dat', format='txt', R_kappa_only=True, units='nm',
+        fret_traj.save_traj(f'{self.analysis_dir}/macv/R_kappa_{file_name}.dat', format='txt', R_kappa_only=True, units='nm',
                             header=False)
         fret_traj.dataframe.head()
 
-    def genarate_rkappa_file_from_macv(self, calculate_macv=True):
+    def genarate_rkappa_file_from_macv(self, calculate_macv=True, pkl_file_name="macv_calculation"):
         self.make_dir(f"{self.analysis_dir}/macv")
         self.remove_dyes_from_trajectory()
         self.rewrite_atoms_after_unlabeling()
@@ -625,11 +625,11 @@ class DataAnalysis:
         self.set_md_traj()
 
         if calculate_macv:
-            self.fret_macv = self.calculate_macv(macv_parameter)
+            self.fret_macv = self.calculate_macv(macv_parameter, pkl_file_name=pkl_file_name)
         else:
             self.fret_macv = self.load_macv()
 
-        self.write_rkappa_file_from_macv()
+        self.write_rkappa_file_from_macv(pkl_file_name)
 
 
 
