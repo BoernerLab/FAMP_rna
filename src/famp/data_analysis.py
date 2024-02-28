@@ -583,7 +583,7 @@ class DataAnalysis:
         s_frames = [int(max_time + 1), int(time_step)]
         return s_frames
 
-    def calculate_macv(self, macv_parameter):
+    def calculate_macv(self, macv_parameter, pkl_file_name="macv_calculation"):
         s_frames = self.get_selected_frames()
         selected_frames = range(0, s_frames[0], s_frames[1])
         print(s_frames)
@@ -596,11 +596,15 @@ class DataAnalysis:
 
         fret = ft.cloud.pipeline_frames(self.md_traj, donor_site, acceptor_site, macv_parameter, selected_frames,
                                         fret_pair)
-        ft.cloud.save_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_macv_10000s.pkl', fret)
+        ft.cloud.save_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}{pkl_file_name}.pkl', fret)
         return fret
 
-    def load_macv(self):
-        fret = ft.cloud.load_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_macv.pkl')
+    def load_macv(self, pkl_file_name="macv_calculation"):
+        """
+        Loads a macv calculation from a pkl file
+        :param pkl_file_name: name of the pkl
+        """
+        fret = ft.cloud.load_obj(f'{self.analysis_dir}/macv/{pkl_file_name}.pkl')
         self.fret_macv = fret
         print(len(fret))
         return fret
