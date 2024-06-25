@@ -417,7 +417,9 @@ class MDSimulation:
             f"-x {self.path_simulation_folder}/nvt/{self.input_structure_name}.xtc "
             f"-cpo {self.path_simulation_folder}/nvt/{self.input_structure_name}.cpt "
             f"-e {self.path_simulation_folder}/nvt/{self.input_structure_name}.edr "
-            f"-g {self.path_simulation_folder}/nvt/{self.input_structure_name}.log -update {update_parameter}")
+            f"-g {self.path_simulation_folder}/nvt/{self.input_structure_name}.log "
+            f"-update {update_parameter} "
+            f"-nt {self.md_parameter['number_of_cores']}")
 
         self.make_result_dir(f"{self.md_parameter['simulation_name']}/npt")
 
@@ -431,6 +433,7 @@ class MDSimulation:
             f"-o {self.path_simulation_folder}/npt/{self.input_structure_name}.tpr "
             f"-po {self.path_simulation_folder}/npt/{self.input_structure_name}.mdp "
             f"-maxwarn 2")
+
         self.run_mdrun_command(
             f"gmx mdrun -v "
             f"-s {self.path_simulation_folder}/npt/{self.input_structure_name}.tpr "
@@ -438,7 +441,9 @@ class MDSimulation:
             f"-x {self.path_simulation_folder}/npt/{self.input_structure_name}.xtc "
             f"-cpo {self.path_simulation_folder}/npt/{self.input_structure_name}.cpt "
             f"-e {self.path_simulation_folder}/npt/{self.input_structure_name}.edr "
-            f"-g {self.path_simulation_folder}/npt/{self.input_structure_name}.log -update {update_parameter}")
+            f"-g {self.path_simulation_folder}/npt/{self.input_structure_name}.log "
+            f"-update {update_parameter} "
+            f"-nt {self.md_parameter['number_of_cores']}")
 
         self.make_result_dir(f"{self.md_parameter['simulation_name']}/md0")
 
@@ -460,7 +465,9 @@ class MDSimulation:
             f"-x {self.path_simulation_folder}/md0/{self.input_structure_name}.xtc "
             f"-cpo {self.path_simulation_folder}/md0/{self.input_structure_name}.cpt "
             f"-e {self.path_simulation_folder}/md0/{self.input_structure_name}.edr "
-            f"-g {self.path_simulation_folder}/md0/{self.input_structure_name}.log -update {update_parameter}")
+            f"-g {self.path_simulation_folder}/md0/{self.input_structure_name}.log "
+            f"-update {update_parameter} "
+            f"-nt {self.md_parameter['number_of_cores']}")
 
         # os.chdir(working_dir_path)
 
@@ -598,7 +605,8 @@ if __name__ == '__main__':
         "temperature[°C]": 25,
         "dist_to_box[nm]": "1",
         "water_model": "tip3p",
-        "distance_restraints": True
+        "distance_restraints": True,
+        "number_of_cores": "4"
     }
     print(os.getcwd())
     hairpin_labeled = MDSimulation(working_dir=f"/home/felix/Documents/md_KLTL_restraints_showcase",

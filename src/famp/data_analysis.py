@@ -201,6 +201,7 @@ class DataAnalysis:
 
     @staticmethod
     def make_ndx_of_rna_without_dyes(gro_file: str, output_file: str):
+        #ToDo PDBuilder application
         """RNA extractor
 
         This function extracts atom id's belonging to an RNA Molecule and not to dyes and writes an .ndx file
@@ -709,8 +710,8 @@ class DataAnalysis:
 
 if __name__ == '__main__':
     analysis_paras = {
-        "simulation_name": "KLTL_unbound_res_showcase",
-        "input_structure_name": "KLTL_unbound_showcase",
+        "simulation_name": "rosetta_250_aligned_0002",
+        "input_structure_name": "rosetta_250_aligned_0002",
         "Donor_residue_name_number": ("C3W", 10),
         "Acceptor_residue_name_number": ("C5W", 45),
     }
@@ -745,20 +746,22 @@ if __name__ == '__main__':
 
     print(os.getcwd())
 
-    md_analysis = DataAnalysis(working_dir="/home/felix/Documents/md_KLTL_restraints_showcase",
-                               path_sim_results="/home/felix/Documents/md_KLTL_restraints_showcase/KLTL_unbound_res_showcase",
+
+    md_analysis = DataAnalysis(working_dir="/Users/felixerichson/Desktop",
+                               path_sim_results="/Users/felixerichson/Desktop/rosetta_250_aligned_0002",
                                analysis_parameter=analysis_paras, macv_label_pars=dye_acv_parameter)
 
     # 1. get all files ready in new analysis folder
     md_analysis.make_data_analysis_results_dirs()
-    md_analysis.export_pdb_trajectory(1)
+    md_analysis.export_pdb_trajectory(10)
+    #md_analysis.export_pdb_trajectory(1)
     # 2. calculate r_kappa from explicit dyes
-    md_analysis.generate_r_kappa_from_dyes()
+    #md_analysis.generate_r_kappa_from_dyes()
     # 3. calculate r_kappa from macv
-    md_analysis.make_dir(f"{md_analysis.analysis_dir}/macv")
-    md_analysis.remove_dyes_from_trajectory()
-    md_analysis.rewrite_atoms_after_unlabeling()
-    md_analysis.genarate_rkappa_file_from_macv()
+    #md_analysis.make_dir(f"{md_analysis.analysis_dir}/macv")
+    #md_analysis.remove_dyes_from_trajectory()
+    #md_analysis.rewrite_atoms_after_unlabeling()
+    #md_analysis.genarate_rkappa_file_from_macv()
     # dye = Dye(("C3W", 63))
     # pdb = dye.get_attechment_id_from_pdb(f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub/analysis/raw/m_tlr_ub_1_s1.pdb")
     # print(pdb)
