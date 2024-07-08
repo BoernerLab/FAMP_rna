@@ -383,7 +383,7 @@ class DataAnalysis:
             f"gmx trjconv -f {md_dir}/md0/{sim_name}.xtc -s {md_dir}/md0/{sim_name}.tpr -o {md_dir}/md0/{sim_name}_s1.pdb -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc mol -center -b 1 -e 10")
         clean_pdb(f"{md_dir}/md0/{sim_name}_s1.pdb", chain_id=True)
 
-    def export_pdb_trajectory(self, time_steps):
+    def export_pdb_trajectory(self, time_steps, unlabeled_traj=False):
         """
         Exports a pdb trajectory from a GROMACS simulation file.
 
@@ -391,8 +391,13 @@ class DataAnalysis:
         :return: none
         """
         sim_name = self.analysis_parameter['input_structure_name']
-        self.run_command(
-            f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_traj.pdb -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc mol -dt {time_steps} -center")
+        if unlabeled_traj:
+            self.run_command(
+                f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_traj.pdb -n {self.analysis_dir}/Index_Files/RNA_without_Dyes_python.ndx -pbc mol -dt {time_steps} -center")
+
+        else:
+            self.run_command(
+                f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_traj.pdb -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc mol -dt {time_steps} -center")
 
     def export_range_pdb_trajectory(self, time_steps: int, traj_range: list):
         """
