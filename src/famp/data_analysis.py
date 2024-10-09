@@ -584,10 +584,10 @@ class DataAnalysis:
         s_frames = [int(max_time + 1), int(time_step)]
         return s_frames
 
-    def calculate_macv(self, macv_parameter):
+    def calculate_macv(self, macv_parameter, frame_factor=1):
         s_frames = self.get_selected_frames()
-        selected_frames = range(0, s_frames[0], s_frames[1])
-        print(s_frames)
+        selected_frames = range(0, s_frames[0], s_frames[1]*frame_factor)
+        print(s_frames, selected_frames)
 
         donor_site = list(macv_parameter["Position"].keys())[0]
         acceptor_site = list(macv_parameter["Position"].keys())[1]
@@ -606,15 +606,15 @@ class DataAnalysis:
         print(len(fret))
         return fret
 
-    def write_rkappa_file_from_macv(self):
+    def write_rkappa_file_from_macv(self, frame_factor=1):
         s_frames = self.get_selected_frames()
-        fret_traj = ft.cloud.Trajectory(self.fret_macv, timestep=s_frames[1] * int(self.md_traj.timestep),
+        fret_traj = ft.cloud.Trajectory(self.fret_macv, timestep=(s_frames[1]*frame_factor) * int(self.md_traj.timestep),
                                         kappasquare=0.66)
         fret_traj.save_traj(f'{self.analysis_dir}/macv/R_kappa_ACV.dat', format='txt', R_kappa_only=True, units='nm',
                             header=False)
         fret_traj.dataframe.head()
 
-    def genarate_rkappa_file_from_macv(self, calculate_macv=True):
+    def genarate_rkappa_file_from_macv(self, calculate_macv=True, frame_factor=1):
         self.make_dir(f"{self.analysis_dir}/macv")
         self.remove_dyes_from_trajectory()
         self.rewrite_atoms_after_unlabeling()
@@ -622,11 +622,11 @@ class DataAnalysis:
         self.set_md_traj()
 
         if calculate_macv:
-            self.fret_macv = self.calculate_macv(macv_parameter)
+            self.fret_macv = self.calculate_macv(macv_parameter, frame_factor=frame_factor)
         else:
             self.fret_macv = self.load_macv()
 
-        self.write_rkappa_file_from_macv()
+        self.write_rkappa_file_from_macv(frame_factor=frame_factor)
 
 
 
@@ -756,7 +756,7 @@ if __name__ == '__main__':
     md_analysis.export_pdb_trajectory(10)
     #md_analysis.export_pdb_trajectory(1)
     # 2. calculate r_kappa from explicit dyes
-    #md_analysis.generate_r_kappa_from_dyes()
+    md_analysis.generate_r_kappa_from_dyes()
     # 3. calculate r_kappa from macv
     #md_analysis.make_dir(f"{md_analysis.analysis_dir}/macv")
     #md_analysis.remove_dyes_from_trajectory()
