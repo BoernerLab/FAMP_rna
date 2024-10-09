@@ -383,3 +383,4 @@ pyrightconfig.json
 /docs/_build/
 /FAM_Pipeline
 /tutorial/MD_Simulation_RNA_Hairpin_showcase/md0/Labeled_RNA_Hairpin.xtc
+/docs/content/.DS*
