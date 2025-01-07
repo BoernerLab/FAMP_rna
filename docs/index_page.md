@@ -33,4 +33,3 @@ width: 600px
 ---
 Schematic overview of the FAMP pipeline. The pipeline consists of the Modeling, Simulation, and Data Analysis modules, covering 2D/3D structure prediction, molecular dynamics simulations, and FRET data analysis.
 ```
-

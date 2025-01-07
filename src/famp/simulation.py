@@ -358,7 +358,6 @@ class MDSimulation:
             f"-maxwarn 2")
 
         if self.md_parameter["c_magnesium_ions[mol/l]"] > 0:
-
             self.run_gromacs_command(
                 f"gmx select "
                 f"-f {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
@@ -538,7 +537,7 @@ class MDSimulation:
         restraint_text = self.generate_text_for_topology().split("\n")
 
         for i, text in enumerate(reversed(restraint_text)):
-            file_content.insert((file_position-1)+1, text)
+            file_content.insert((file_position - 1) + 1, text)
 
         with open(f"{self.path_simulation_folder}/{self.input_structure_name}.top", 'w') as f:
             for line in file_content:

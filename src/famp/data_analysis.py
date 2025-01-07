@@ -201,7 +201,6 @@ class DataAnalysis:
 
     @staticmethod
     def make_ndx_of_rna_without_dyes(gro_file: str, output_file: str):
-        #ToDo PDBuilder application
         """RNA extractor
 
         This function extracts atom id's belonging to an RNA Molecule and not to dyes and writes an .ndx file
@@ -384,7 +383,7 @@ class DataAnalysis:
             f"gmx trjconv -f {md_dir}/md0/{sim_name}.xtc -s {md_dir}/md0/{sim_name}.tpr -o {md_dir}/md0/{sim_name}_s1.pdb -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc mol -center -b 1 -e 10")
         clean_pdb(f"{md_dir}/md0/{sim_name}_s1.pdb", chain_id=True)
 
-    def export_pdb_trajectory(self, time_steps):
+    def export_pdb_trajectory(self, time_steps, unlabeled_traj=False):
         """
         Exports a pdb trajectory from a GROMACS simulation file.
 
@@ -392,8 +391,13 @@ class DataAnalysis:
         :return: none
         """
         sim_name = self.analysis_parameter['input_structure_name']
-        self.run_command(
-            f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_traj.pdb -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc mol -dt {time_steps} -center")
+        if unlabeled_traj:
+            self.run_command(
+                f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_unlabeled_traj.pdb -n {self.analysis_dir}/Index_Files/RNA_without_Dyes_python.ndx -pbc mol -dt {time_steps} -center")
+
+        else:
+            self.run_command(
+                f"gmx trjconv -f {self.analysis_dir}/raw/{sim_name}_centered.xtc -s {self.analysis_dir}/raw/{sim_name}.tpr -o {self.analysis_dir}/raw/{sim_name}_traj.pdb -n {self.analysis_dir}/Index_Files/RNA.ndx -pbc mol -dt {time_steps} -center")
 
     def export_range_pdb_trajectory(self, time_steps: int, traj_range: list):
         """
@@ -584,7 +588,7 @@ class DataAnalysis:
         s_frames = [int(max_time + 1), int(time_step)]
         return s_frames
 
-    def calculate_macv(self, macv_parameter, frame_factor=1):
+    def calculate_macv(self, macv_parameter, pkl_file_name="macv_calculation", frame_factor=1):
         s_frames = self.get_selected_frames()
         selected_frames = range(0, s_frames[0], s_frames[1]*frame_factor)
         print(s_frames, selected_frames)
@@ -597,24 +601,28 @@ class DataAnalysis:
 
         fret = ft.cloud.pipeline_frames(self.md_traj, donor_site, acceptor_site, macv_parameter, selected_frames,
                                         fret_pair)
-        ft.cloud.save_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_macv_10000s.pkl', fret)
+        ft.cloud.save_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}{pkl_file_name}.pkl', fret)
         return fret
 
-    def load_macv(self):
-        fret = ft.cloud.load_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_macv.pkl')
+    def load_macv(self, pkl_file_name="macv_calculation"):
+        """
+        Loads a macv calculation from a pkl file
+        :param pkl_file_name: name of the pkl
+        """
+        fret = ft.cloud.load_obj(f'{self.analysis_dir}/macv/{pkl_file_name}.pkl')
         self.fret_macv = fret
         #print(len(fret))
         return fret
 
-    def write_rkappa_file_from_macv(self, frame_factor=1):
+    def write_rkappa_file_from_macv(self, file_name, frame_factor=1):
         s_frames = self.get_selected_frames()
         fret_traj = ft.cloud.Trajectory(self.fret_macv, timestep=(s_frames[1]*frame_factor) * int(self.md_traj.timestep),
                                         kappasquare=0.66)
-        fret_traj.save_traj(f'{self.analysis_dir}/macv/R_kappa_ACV.dat', format='txt', R_kappa_only=True, units='nm',
+        fret_traj.save_traj(f'{self.analysis_dir}/macv/R_kappa_{file_name}.dat', format='txt', R_kappa_only=True, units='nm',
                             header=False)
         fret_traj.dataframe.head()
 
-    def genarate_rkappa_file_from_macv(self, calculate_macv=True, frame_factor=1):
+    def genarate_rkappa_file_from_macv(self, calculate_macv=True, pkl_file_name="macv_calculation", frame_factor=1):
         self.make_dir(f"{self.analysis_dir}/macv")
         self.remove_dyes_from_trajectory()
         self.rewrite_atoms_after_unlabeling()
@@ -626,7 +634,7 @@ class DataAnalysis:
         else:
             self.fret_macv = self.load_macv()
 
-        self.write_rkappa_file_from_macv(frame_factor=frame_factor)
+        self.write_rkappa_file_from_macv(pkl_file_name, frame_factor=frame_factor)
 
 
 
@@ -710,8 +718,8 @@ class DataAnalysis:
 
 if __name__ == '__main__':
     analysis_paras = {
-        "simulation_name": "rosetta_250_aligned_0002",
-        "input_structure_name": "rosetta_250_aligned_0002",
+        "simulation_name": "KLTL_unbound_res_showcase",
+        "input_structure_name": "KLTL_unbound_showcase",
         "Donor_residue_name_number": ("C3W", 10),
         "Acceptor_residue_name_number": ("C5W", 45),
     }
@@ -746,22 +754,20 @@ if __name__ == '__main__':
 
     print(os.getcwd())
 
-
-    md_analysis = DataAnalysis(working_dir="/Users/felixerichson/Desktop",
-                               path_sim_results="/Users/felixerichson/Desktop/rosetta_250_aligned_0002",
+    md_analysis = DataAnalysis(working_dir="/home/felix/Documents/md_KLTL_restraints_showcase",
+                               path_sim_results="/home/felix/Documents/md_KLTL_restraints_showcase/KLTL_unbound_res_showcase",
                                analysis_parameter=analysis_paras, macv_label_pars=dye_acv_parameter)
 
     # 1. get all files ready in new analysis folder
     md_analysis.make_data_analysis_results_dirs()
-    md_analysis.export_pdb_trajectory(10)
-    #md_analysis.export_pdb_trajectory(1)
+    md_analysis.export_pdb_trajectory(1)
     # 2. calculate r_kappa from explicit dyes
     md_analysis.generate_r_kappa_from_dyes()
     # 3. calculate r_kappa from macv
-    #md_analysis.make_dir(f"{md_analysis.analysis_dir}/macv")
-    #md_analysis.remove_dyes_from_trajectory()
-    #md_analysis.rewrite_atoms_after_unlabeling()
-    #md_analysis.genarate_rkappa_file_from_macv()
+    md_analysis.make_dir(f"{md_analysis.analysis_dir}/macv")
+    md_analysis.remove_dyes_from_trajectory()
+    md_analysis.rewrite_atoms_after_unlabeling()
+    md_analysis.genarate_rkappa_file_from_macv()
     # dye = Dye(("C3W", 63))
     # pdb = dye.get_attechment_id_from_pdb(f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub/analysis/raw/m_tlr_ub_1_s1.pdb")
     # print(pdb)
