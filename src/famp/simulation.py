@@ -331,8 +331,12 @@ class MDSimulation:
             f"-po {self.path_simulation_folder}/em/{self.input_structure_name}.mdp "
             f"-maxwarn 2")
 
-        self.make_ndx_of_SOL(f"{self.path_simulation_folder}/em/{self.input_structure_name}.gro",
-                             f"{self.path_simulation_folder}/em/SOL.ndx")
+        self.run_gromacs_command(
+            f"gmx select "
+            f"-f {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
+            f"-s {self.path_simulation_folder}/em/{self.input_structure_name}.tpr "
+            f"-on {self.path_simulation_folder}/em/SOL_K.ndx "
+            f"-select 'SOL'")
 
         self.run_gromacs_command(
             f"gmx genion "
@@ -342,7 +346,7 @@ class MDSimulation:
             f"-nname Cl "
             f"-pname K "
             f"-neutral "
-            f"-n {self.path_simulation_folder}/em/SOL.ndx")
+            f"-n {self.path_simulation_folder}/em/SOL_K.ndx")
 
         self.run_gromacs_command(
             f"gmx grompp "
@@ -354,8 +358,13 @@ class MDSimulation:
             f"-maxwarn 2")
 
         if self.md_parameter["c_magnesium_ions[mol/l]"] > 0:
-            self.make_ndx_of_SOL(f"{self.path_simulation_folder}/em/{self.input_structure_name}.gro",
-                                 f"{self.path_simulation_folder}/em/SOL.ndx")
+
+            self.run_gromacs_command(
+                f"gmx select "
+                f"-f {self.path_simulation_folder}/em/{self.input_structure_name}.gro "
+                f"-s {self.path_simulation_folder}/em/{self.input_structure_name}.tpr "
+                f"-on {self.path_simulation_folder}/em/SOL_MG.ndx "
+                f"-select 'SOL'")
 
             self.run_gromacs_command(
                 f"gmx genion "
@@ -366,7 +375,7 @@ class MDSimulation:
                 f"-pname MG "
                 f"-pq 2 "
                 f"-conc {self.md_parameter['c_magnesium_ions[mol/l]']} "
-                f"-n {self.path_simulation_folder}/em/SOL.ndx")
+                f"-n {self.path_simulation_folder}/em/SOL_MG.ndx")
 
             self.run_gromacs_command(
                 f"gmx grompp "
@@ -502,17 +511,29 @@ class MDSimulation:
         """Adds the formatted text that defines the restriants to the topology file.
 
         The text is added before the string "; Include water topology", because after the string a new section of the
-        topology starts and therefore errors occur. This string must exist in the file.
+        topology starts and therefore errors occur. The string ("; Include water topology") must exist in the file.
 
         """
         file_content = []
         file_position = 0
+        start_restraint_section = None
+        end_restraint_section = None
+
+        # Read the topology file and identify the sections to modify
         with open(f"{self.path_simulation_folder}/{self.input_structure_name}.top", 'r') as f:
             for i, line in enumerate(f):
-                line = line.strip()
-                if "; Include water topology" in line:
+                stripped_line = line.strip()
+                if "[ distance_restraints ]" in stripped_line and start_restraints is None:
+                    start_restraints = i
+                if "; Include water topology" in stripped_line:
                     file_position = i
+                    if start_restraints is not None and end_restraints is None:
+                        end_restraints = i
                 file_content.append(line)
+
+                # Remove existing [distance restraints] section if it exists
+            if start_restraints is not None and end_restraints is not None:
+                    del file_content[start_restraints:end_restraints]
 
         restraint_text = self.generate_text_for_topology().split("\n")
 

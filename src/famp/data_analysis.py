@@ -603,7 +603,7 @@ class DataAnalysis:
     def load_macv(self):
         fret = ft.cloud.load_obj(f'{self.analysis_dir}/macv/{self.input_structure_name}_macv.pkl')
         self.fret_macv = fret
-        print(len(fret))
+        #print(len(fret))
         return fret
 
     def write_rkappa_file_from_macv(self, frame_factor=1):
