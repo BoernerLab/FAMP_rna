@@ -718,8 +718,8 @@ class DataAnalysis:
 
 if __name__ == '__main__':
     analysis_paras = {
-        "simulation_name": "KLTL_unbound_res_showcase",
-        "input_structure_name": "KLTL_unbound_showcase",
+        "simulation_name": "lukas_poly_u_test_2021er_roteded_restraint",
+        "input_structure_name": "lukas_polyu_rotated",
         "Donor_residue_name_number": ("C3W", 10),
         "Acceptor_residue_name_number": ("C5W", 45),
     }
@@ -754,20 +754,20 @@ if __name__ == '__main__':
 
     print(os.getcwd())
 
-    md_analysis = DataAnalysis(working_dir="/home/felix/Documents/md_KLTL_restraints_showcase",
-                               path_sim_results="/home/felix/Documents/md_KLTL_restraints_showcase/KLTL_unbound_res_showcase",
+    md_analysis = DataAnalysis(working_dir="/home/felix/Documents/md_lukas_test_2021er",
+                               path_sim_results="/home/felix/Documents/md_lukas_test_2021er/lukas_poly_u_test_2021er_roteded_restraint",
                                analysis_parameter=analysis_paras, macv_label_pars=dye_acv_parameter)
 
     # 1. get all files ready in new analysis folder
     md_analysis.make_data_analysis_results_dirs()
-    md_analysis.export_pdb_trajectory(1)
+    md_analysis.export_pdb_trajectory(5)
     # 2. calculate r_kappa from explicit dyes
-    md_analysis.generate_r_kappa_from_dyes()
+    #md_analysis.generate_r_kappa_from_dyes()
     # 3. calculate r_kappa from macv
-    md_analysis.make_dir(f"{md_analysis.analysis_dir}/macv")
-    md_analysis.remove_dyes_from_trajectory()
-    md_analysis.rewrite_atoms_after_unlabeling()
-    md_analysis.genarate_rkappa_file_from_macv()
+    #md_analysis.make_dir(f"{md_analysis.analysis_dir}/macv")
+    #md_analysis.remove_dyes_from_trajectory()
+    #md_analysis.rewrite_atoms_after_unlabeling()
+    #md_analysis.genarate_rkappa_file_from_macv()
     # dye = Dye(("C3W", 63))
     # pdb = dye.get_attechment_id_from_pdb(f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub/analysis/raw/m_tlr_ub_1_s1.pdb")
     # print(pdb)
