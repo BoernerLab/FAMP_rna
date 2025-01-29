@@ -507,41 +507,46 @@ class MDSimulation:
         return formatted_text
 
     def add_restraints_to_topology(self):
-        """Adds the formatted text that defines the restriants to the topology file.
+        """Adds the formatted text that defines the restraints to the topology file.
 
-        The text is added before the string "; Include water topology", because after the string a new section of the
-        topology starts and therefore errors occur. The string ("; Include water topology") must exist in the file.
-
+        If a section starting with [distance restraints] exists, it is removed,
+        including everything up to "; Include water topology".
+        The string ("; Include water topology") must exist in the file.
+        The new restraints are added directly before "; Include water topology".
         """
         file_content = []
-        file_position = 0
-        start_restraint_section = None
-        end_restraint_section = None
+        start_restraints = None
+        end_restraints = None
+        water_topology_position = None
 
         # Read the topology file and identify the sections to modify
         with open(f"{self.path_simulation_folder}/{self.input_structure_name}.top", 'r') as f:
             for i, line in enumerate(f):
                 stripped_line = line.strip()
-                if "[ distance_restraints ]" in stripped_line and start_restraints is None:
+                if "[distance restraints]" in stripped_line and start_restraints is None:
                     start_restraints = i
                 if "; Include water topology" in stripped_line:
-                    file_position = i
+                    water_topology_position = i
                     if start_restraints is not None and end_restraints is None:
                         end_restraints = i
-                file_content.append(line)
+                file_content.append(line.rstrip())  # Strip trailing whitespace to avoid empty lines
 
-                # Remove existing [distance restraints] section if it exists
-            if start_restraints is not None and end_restraints is not None:
-                    del file_content[start_restraints:end_restraints]
+        # Remove existing [distance restraints] section if it exists
+        if start_restraints is not None and end_restraints is not None:
+            del file_content[start_restraints:end_restraints]
 
+        # Generate the new restraint text
         restraint_text = self.generate_text_for_topology().split("\n")
+        restraint_text = [line.strip() for line in restraint_text if line.strip()]  # Remove empty lines from new text
 
-        for i, text in enumerate(reversed(restraint_text)):
-            file_content.insert((file_position - 1) + 1, text)
+        # Insert the new restraint text before "; Include water topology"
+        if water_topology_position is not None:
+            for i, text in enumerate(reversed(restraint_text)):
+                file_content.insert(water_topology_position, text)
 
+        # Write the updated content back to the file
         with open(f"{self.path_simulation_folder}/{self.input_structure_name}.top", 'w') as f:
-            for line in file_content:
-                f.write("%s\n" % line)
+            f.write("\n".join(file_content) + "\n")
 
     def activate_restraints_mdp(self):
         """Activates the parameter for distance restraints.
@@ -619,18 +624,18 @@ class MDSimulation:
 
 if __name__ == '__main__':
     simulation_parameter = {
-        "simulation_name": "KLTL_unbound_res_showcase",
+        "simulation_name": "lukas_poly_u_test_2021er_roteded_restraint",
         "c_magnesium_ions[mol/l]": 0.02,
-        "simulation_time[ns]": 0.5,
+        "simulation_time[ns]": 0.2,
         "temperature[°C]": 25,
         "dist_to_box[nm]": "1",
-        "water_model": "tip3p",
+        "water_model": "tip4p",
         "distance_restraints": True,
-        "number_of_cores": "4"
+        "number_of_cores": "24"
     }
     print(os.getcwd())
-    hairpin_labeled = MDSimulation(working_dir=f"/home/felix/Documents/md_KLTL_restraints_showcase",
-                                   file_path_input=f"/home/felix/Documents/md_KLTL_restraints_showcase/KLTL_unbound_showcase.pdb",
+    hairpin_labeled = MDSimulation(working_dir=f"/home/felix/Documents/md_lukas_test_2021er",
+                                   file_path_input=f"/home/felix/Documents/md_lukas_test_2021er/lukas_polyu_rotated.pdb",
                                    md_parameter=simulation_parameter)
 
     hairpin_labeled.prepare_new_md_run()
@@ -638,59 +643,63 @@ if __name__ == '__main__':
     hairpin_labeled.solvate_molecule()
 
     restraint_1 = {
-        "atom_id_1": 181,
-        "atom_id_2": 1042,
+        "atom_id_1": 193,
+        "atom_id_2": 1791,
         "lower_distance_limit": 0.0,
-        "atoms_distance": 0.30,
-        "upper_distance_limit": 0.5,
-        "force_constant_fraction": 0.25,
+        "atoms_distance": 0.32,
+        "upper_distance_limit": 0.52,
+        "force_constant_fraction": 1.0,
 
     }
 
     restraint_2 = {
-        "atom_id_1": 214,
-        "atom_id_2": 1042,
+        "atom_id_1": 181,
+        "atom_id_2": 973,
         "lower_distance_limit": 0.0,
-        "atoms_distance": 0.30,
-        "upper_distance_limit": 0.5,
-        "force_constant_fraction": 0.25,
+        "atoms_distance": 0.37,
+        "upper_distance_limit": 0.57,
+        "force_constant_fraction": 1.0,
 
     }
 
     restraint_3 = {
-        "atom_id_1": 226,
-        "atom_id_2": 1863,
+        "atom_id_1": 214,
+        "atom_id_2": 973,
         "lower_distance_limit": 0.0,
-        "atoms_distance": 0.27,
-        "upper_distance_limit": 0.5,
-        "force_constant_fraction": 0.25,
+        "atoms_distance": 0.34,
+        "upper_distance_limit": 0.54,
+        "force_constant_fraction": 1.0,
+
     }
 
     restraint_4 = {
-        "atom_id_1": 271,
-        "atom_id_2": 1863,
+        "atom_id_1": 220,
+        "atom_id_2": 1758,
         "lower_distance_limit": 0.0,
-        "atoms_distance": 0.33,
-        "upper_distance_limit": 0.5,
-        "force_constant_fraction": 0.25,
+        "atoms_distance": 0.31,
+        "upper_distance_limit": 0.51,
+        "force_constant_fraction": 1.0,
+
     }
 
     restraint_5 = {
-        "atom_id_1": 220,
-        "atom_id_2": 1863,
+        "atom_id_1": 226,
+        "atom_id_2": 1758,
         "lower_distance_limit": 0.0,
         "atoms_distance": 0.27,
-        "upper_distance_limit": 0.5,
-        "force_constant_fraction": 0.25,
+        "upper_distance_limit": 0.47,
+        "force_constant_fraction": 1.0,
+
     }
 
     restraint_6 = {
-        "atom_id_1": 193,
-        "atom_id_2": 1896,
+        "atom_id_1": 259,
+        "atom_id_2": 1725,
         "lower_distance_limit": 0.0,
-        "atoms_distance": 0.27,
-        "upper_distance_limit": 0.5,
-        "force_constant_fraction": 0.25,
+        "atoms_distance": 0.31,
+        "upper_distance_limit": 0.51,
+        "force_constant_fraction": 1.0,
+
     }
 
     hairpin_labeled.add_restraint(restraint_1)
