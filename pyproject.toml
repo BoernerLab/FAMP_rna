@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=77.0.3", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "famp"
+version = "0.0.1"
+description = "FAMP - FRET assisted modeling Pipeline for RNA structures"
+authors = [
+    { name = "Felix Erichson", email = "erichson@hs-mittweida.de" },
+    { name = "Fabio Steffen", email = "fabio.steffen@chem.uzh.ch" },
+    { name = "Richard Börner", email = "richard.boerner@hs-mittweida.de"}
+]
+maintainers = [
+    { name = "Felix Erichson", email = "erichson@hs-mittweida.de" }
+]
+license = { text ="GPL-3.0-or-later" }
+requires-python = ">=3.10"
+readme = "README.md"
+keywords = ["integrative modeling", "FRET", "molecular dynemics", "structure prediction", "pipeline", "RNA"]
+
+classifiers = [
+    "Programming Language :: Python",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Framework :: Jupyter",
+    "Topic :: Scientific/Engineering :: Bio-Informatics"
+]
+
+dependencies = [
+    "numpy",
+    "pandas",
+    "MDAnalysis >=2.7",
+    "mdtraj >=1.9",
+    "fretraj >=0.2.11",
+    "matplotlib",
+    "seaborn",
+    "jupyter",
+    "ipykernel",
+    "scipy",
+    "lmfit"
+]
+
+[project.urls]
+"Source" = "https://github.com/felixErichson/FAMP_rna"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data =true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+

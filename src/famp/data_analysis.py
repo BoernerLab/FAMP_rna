@@ -169,6 +169,7 @@ class DataAnalysis:
                     atom = line.split()[1]
                     base = line.split()[0]
                     if any(string in base for string in
+                        #ToDo: extend for DNA and other dyes or linker pars
                            ["RU", "RG", "RA", "RC", "C3W", "C5W", "RGO", "RUM", "A", "U", "C", "G"]):
                         atoms.append(line.split()[2])
 

@@ -1,0 +1,3 @@
+include src/famp/scripts/mac_os/rosetta/mac_extract_pdb.sh
+include src/famp/scripts/linux/rosetta/linux_extract_pdb.sh
+include src/famp/scripts/dye_properties.csv

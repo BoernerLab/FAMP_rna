@@ -1,6 +1,6 @@
 ; define                 = -DPOSRES              ; position restraints (commented = released)
 integrator               = md                    ; leap-frog integrator
-nsteps                   = 10000000                ; number of steps to integrate
+nsteps                   = 50000000                ; number of steps to integrate
 dt                       = 0.002                 ; integration timestep
 nstxout                  = 0                     ; number of steps between writing coordinates to output trajectory (uncompressed, .trr)
 nstvout                  = 0                     ; number of steps between writing velocities to output trajectory (uncompressed, .trr)
