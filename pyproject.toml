@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "famp"
-version = "0.0.3"
+version = "0.0.1"
 description = "FAMP - FRET assisted modeling Pipeline for RNA structures"
 authors = [
     { name = "Felix Erichson", email = "erichson@hs-mittweida.de" },
@@ -67,7 +67,7 @@ include-package-data =true
 where = ["src"]
 
 [tool.bumpver]
-current_version = "0.0.3"
+current_version = "0.0.1"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump version {old_version} -> {new_version}"
 commit = true
