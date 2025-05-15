@@ -41,6 +41,21 @@ dependencies = [
     "lmfit"
 ]
 
+[project.optional-dependencies]
+dev = [
+    "bumpver",
+    "pytest",
+    "build",
+    "pytest-cov",
+    "pytest-mock"
+    ]
+docs = [
+    "jupyter-book",
+    "ipywidgets",
+    "matplotlib",
+    "seaborn"
+    ]
+
 [project.urls]
 "Source" = "https://github.com/felixErichson/FAMP_rna"
 
