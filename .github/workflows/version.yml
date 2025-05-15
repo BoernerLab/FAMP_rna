@@ -27,7 +27,6 @@ jobs:
 
       - name: Bump version, commit, and tag
         run: |
-          bumpver update --yes
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git commit -am "CI: bump version"
