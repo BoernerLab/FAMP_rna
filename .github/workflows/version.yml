@@ -1,0 +1,36 @@
+name: Auto-Bump-Version
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  bump-tag-push:
+    name: Bump version and create Git tag
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install bumpver
+        run: pip install bumpver
+
+      - name: Bump version, commit, and tag
+        run: |
+          bumpver update --yes
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git commit -am "CI: bump version"
+          git tag "$(bumpver show --current-version)"
+          git push
+          git push --tags
