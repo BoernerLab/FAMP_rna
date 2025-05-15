@@ -384,3 +384,5 @@ pyrightconfig.json
 /FAM_Pipeline
 /tutorial/MD_Simulation_RNA_Hairpin_showcase/md0/Labeled_RNA_Hairpin.xtc
 /docs/content/.DS*
+/tutorial/MD_Simulation_RNA_Hairpin_showcase/analysis/raw/.Labeled_RNA_Hairpin_centered.xtc_offsets.npz
+/tutorial/MD_Simulation_RNA_Hairpin_showcase/analysis/raw/.Labeled_RNA_Hairpin_unlabeled.xtc_offsets.npz
