@@ -1,105 +1,76 @@
 # Simulation
 
-Movement of the RNA and dyes is simulated in the pipeline using MD simulations. 
-The GROMACS program is addressed here. MD simulations can be executed with a simple parameter definition. 
-The implementation of restraints between atoms is also implemented. 
+This section describes how to run molecular dynamics (MD) simulations with the FAMP pipeline using **GROMACS**. The goal is to simulate the motion of RNA molecules and attached dyes under realistic conditions.
 
-The functions are implemented in the `MDSimulation` class. An object is defined by calling the class and defining the 
-following class attributes.
-- `working_dir`: Folder in which the results are to be saved
-- `file_path_input`: Path to the input structure (*.pdb*) for the MD simulation
-- `md_parameter`: Python dictionary with the defined parameters
+All simulation functions are encapsulated in the `MDSimulation` class.
 
-Example Code for initialising a MD simulation class: 
+---
+
+## Initialization
+To begin an MD simulation, you need to initialize the `MDSimulation` class with the following attributes:
+
+- `working_dir`: Directory where the simulation results will be saved
+- `file_path_input`: Path to the input structure file in PDB format
+- `md_parameter`: Dictionary containing MD-specific parameters (see [parameter section](parameter.md))
 
 ```python
-simulation = famp.MDSimulation(working_dir=f"{os.getcwd()}/data/simulation",
-                               file_path_input=f"{os.getcwd()}/data/input.pdb",
-                               md_parameter=simulation_parameter)
+import famp
+import os
+
+simulation = famp.simulation.MDSimulation(
+    working_dir=f"{os.getcwd()}/data/simulation",
+    file_path_input=f"{os.getcwd()}/data/input.pdb",
+    md_parameter=simulation_parameter
+)
 ```
 
-First, the MD simulation must be prepared in the specified working directory. The following command is used for this: 
+---
 
-```
+## Step 1: Preparation
+To prepare the MD run, call:
+```python
 simulation.prepare_new_md_run()
 ```
-Here the input structure and required files such as force field and parameter files are copied into the working directory. Parameters are also updated. 
+This function:
+- sets up the directory structure,
+- copies the force field and parameter files,
+- imports the RNA 3D structure,
+- updates simulation parameters based on the provided dictionary.
 
-The update_parameter() function can be used to update parameters. This reads the parameters from the python dictionary and adjusts them in the GROMACS parameters. 
+The function `update_parameter()` can be used to update specific values from the parameter set programmatically.
 
-## Solvation 
+---
 
-In the first step of the MD simulation with GROMACS, the molecule is virtually dissolved in water. The individual steps for the solvation of the molecule can be read here. Command for the molecule solvation with energy minimization. 
+## Step 2: Solvation
+Sets up the virtual water box and solvates the RNA 3D structure. This process includes:
+- generating a simulation box,
+- solvating the RNA with water molecules,
+- adding counterions to neutralize the system,
+- performing energy minimization.
 
-```
+
+```python
 simulation.solvate_molecule()
 ```
-The results are stored in the working directory under the folder *em*. 
 
-## MD run
+All intermediate files and results are saved in the `em/` subdirectory of the working directory.
 
-With the command: 
-```
+---
+
+## Step 3: Equilibration and Production Run
+Start the full MD simulation using:
+```python
 simulation.run_simulation_steps()
 ```
-The simulation is started. The pressure and temperature are each set to 300 ps and then the full MD run is run with the set simulation time. A detailed description can be found here. 
+This step performs:
+1. **Temperature equilibration** (NVT ensemble, 300 ps)
+2. **Pressure equilibration** (NPT ensemble, 300 ps)
+3. **Full MD production run** according to `simulation_time[ns]` defined in the parameter file
 
-The results of the MD run can be found in the *md0* folder.
+All result files (trajectories, logs, structures) are saved in dedicated subdirectories (e.g., `nvt/`, `npt/`, `md0/`).
 
-## Restraints
+---
 
-Restraints can be used to force distances between atoms in the simulation. This is useful, for example, to obtain bonds or to induce bonds. 
-
-Restraints are defined in the pipeline using a python dictionary. 
-```
-restraint_1 = {
-        "atom_id_1": 250,
-        "atom_id_2": 1831,
-        "lower_distance_limit": 0.0,
-        "atoms_distance": 0.32,
-        "upper_distance_limit": 0.5,
-        "force_constant_fraction": 0.5,
-
-    }
-```
-- `atom_id_1`: Atom number of the first atom for the restraint. The number should be taken from the *.gro* file. 
-- `atom_id_2`: Analog to atom 1
-- `lower_distance_limit`: Distance for upper limit of free restraint
-- `atoms_distance`: Distance to be kept between the atoms
-- `upper_distance_limit`: Distance from which the harmonic potential is linearly defined
-- `force_constant_fraction`: Divisor by which the force constant is to be multiplied. 
-
-Restraints are defined as GROMACS distance limits using a harmonic potential. Further information can be found <a href="https://manual.gromacs.org/2023.3/reference-manual/functions/restraints.html#distance-restraints" target="_balnk">here</a>
-
-Restraints are collected in a list. Each defined restraint must be added with: 
-```
-simulation.add_restraint(restraint_1)
-```
-
-To activate the restraints, the following command must be executed before the MD run: 
-```
-simulation.apply_restraints()
-```
-
-## Parameter
-```python
-simulation_parameter = {
-    "simulation_name": "simulation1",
-    "c_magnesium_ions[mol/l]": 0.02,
-    "simulation_time[ns]": 1,
-    "temperature[°C]": 25,
-    "dist_to_box[nm]": "1",
-    "water_model": "tip3p",
-    "distance_restraints": True
-}
-```
-
-The parameters for the simulation are a reduced selection of Rosetta flag parameters, which are required for the tertiary structure modeling.
-
-- *simulation_name*: Name of the current simulation (Name for directory)
-- *c_magnesium_ions[mol/l]*: Concentration of divalent magnesium iones in $\frac{mol}{l}$ used in the simulaiton. Divalent ions are limeted to Mg(II)
-- *simulation_time[ns]*: The total time the simulation should run in ns.
-- *temperature[°C]*: Temperature used in the simulation. 
-- *dist_to_box[nm]*: Distance of the molecule to the edges of the box. Takes influcence of the box size.
-- *water_model*: *tip3p* or *tip4p*. It is possible to use the 3-Point or the 4-point water model in the simulation.  
-- *distance_restraints*: Parameter for activating distance restraints in the simulation. 
+## Notes
+- Short test runs (1–2 ns) are recommended before long production runs.
+- All necessary files are automatically generated, but advanced users may customize the `.mdp` files manually if needed.

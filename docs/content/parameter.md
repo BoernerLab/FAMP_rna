@@ -16,20 +16,39 @@ rosetta_parameter = {
 }
 ```
 
+### Description
+- `path_to_rosetta`: Path to the Rosetta executable for RNA 3D structure prediction (FARFAR2).
+- `nstruct`: Number of structures to generate in a single modeling run.
+- `fasta`: Path to the input RNA sequence in FASTA format.
+- `minimize_rna`: Whether to perform structure minimization after generation.
+- `cycles`: Number of Monte Carlo sampling cycles used in FARFAR2 modeling.
+
+---
+
 
 (content:parameter:simulation)=
 ## MD Simulaiton Parameter
 
-```
+```python
 simulation_parameter = {
-    "simulation_name": "KLTL ",
+    "simulation_name": "KLTL",
     "c_magnesium_ions[mol/l]": 0.02,
     "simulation_time[ns]": 1000,
-    "temperature[°C]": 25,
-    "dist_to_box[nm]": "1.25",
+    "temperature[C]": 25,
+    "dist_to_box[nm]": 1.25,
+    "water_model": "tip3p"
 }
 ```
 
+### Description
+- `simulation_name`: Identifier for this MD run (used to name output folders).
+- `c_magnesium_ions[mol/l]`: Magnesium ion concentration (Mg²⁺) in mol/l to match experimental conditions.
+- `simulation_time[ns]`: Total length of the MD simulation in nanoseconds.
+- `temperature[C]`: Temperature at which the simulation is run (in °C).
+- `dist_to_box[nm]`: Distance from the solute to the edge of the periodic box (defines box size).
+- `water_model`: Specifies water model used in simulation (e.g., `tip3p` or `tip4p`).
+
+---
 
 (content:parameter:analysis)=
 ## Analysis Prameter
@@ -41,6 +60,14 @@ analysis_paras = {
         "Acceptor_residue_name_number": ("C5W", 45),
     }
 ```
+
+### Description
+- `simulation_name`: Must match the MD run identifier.
+- `input_structure_name`: File name of the RNA structure used for the MD run.
+- `Donor_residue_name_number`: Tuple (residue name, number) of donor dye attachment site.
+- `Acceptor_residue_name_number`: Tuple (residue name, number) of acceptor dye attachment site.
+
+---
 
 (content:parameter:dyes)=
 ## Reduced dye Parameter
@@ -74,46 +101,14 @@ dye_acv_parameter = {
     }
 ```
 
-(content:parameter:burst)=
-## Burst Parameter
-```
-burst_parameter = {
-    "dyes": {
-        "tauD": 1.14,
-        "tauA": 1.5,
-        "QD": 0.2,
-        "QA": 0.35,
-        "etaD": 0.37,
-        "etaA": 1,
-        "dipole_angle_abs_em": 10.5
-    },
-    "sampling": {
-        "nbursts": 10000,
-        "skipframesatstart": 0,
-        "skipframesatend": 0,
-        "multiprocessing": true
-    },
-    "fret": {
-        "R0": 54,
-        "kappasquare": 0.6666,
-        "gamma": true,
-        "quenching_radius": 10
-    },
-    "species": {
-        "name": ["all"],
-        "unix_pattern_rkappa": ["*.dat"],
-        "unix_pattern_don_coords": ["Acceptor*.txt"],
-        "unix_pattern_acc_coords": ["Donor*.txt"],
-        "probability": [1],
-        "n_trajectory_splits": null
-    },
-    "bursts": {
-        "lower_limit": 10,
-        "upper_limit": 50,
-        "lambda": -2.3,
-        "QY_correction": false,
-        "averaging": "all",
-        "burst_size_file": None
-    }
-}
-```
+### Description
+- `name`: Identifier for the fluorophore (e.g., `sCy3`, `sCy5`).
+- `linker_length`: Length of the dye linker (Å).
+- `linker_width`: Width parameter for linker flexibility (Å).
+- `dye_radius1/2/3`: Shape parameters for the accessible contact volume.
+- `cv_fraction`: Contact volume fraction for stacking interaction modeling.
+- `cv_thickness`: Thickness of the contact shell in ACV model.
+- `R0`: Förster radius between donor and acceptor (in Å).
+- `n_dist`: Number of sampled distances used in burst simulations.
+
+---

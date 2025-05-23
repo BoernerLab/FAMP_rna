@@ -1,67 +1,79 @@
 # Modeling
 
-Modeling within the pipeline program is limited to *de novo* modeling. Two external programs are used for this. The RNA 
-Fold program is used for secondary structure prediction. Rosetta is used for tertiary structure prediction. 
+The modeling module within the FAMP pipeline is designed for *de novo* RNA structure prediction. Two external tools are employed:
+- **RNAfold** for secondary structure (2D) prediction
+- **Rosetta (FARFAR2)** for tertiary structure (3D) prediction
 
-All functions are implemented in the `Modeling` class. The class is initialized by calling the class and defining the following attributes:
-- `working_dir` = directory in which the results are to be saved
-- `file_path_sequence` = path to the input fasta sequence
-- `modeling_parameter` = Python dictiononary with the defined modeling parameters (see parameters)
+All modeling-related functions are encapsulated in the `Modeling` class. This module forms the first step in the FAMP pipeline and enables generation of structural input models for FRET-based analysis.
 
-Example Code for initialising a modeling class:
+## Initialization
+To start modeling, initialize the class by providing:
+- `working_dir`: Output directory for generated files
+- `file_path_sequence`: Path to the input RNA sequence in FASTA format
+- `modeling_parameter`: Python dictionary defining the modeling parameters (see the [parameter section](parameter.md))
+
 ```python
 import famp
+import os
+
 current_dir = os.getcwd()
-modeling = famp.modeling.Modeling(working_dir=f"{current_dir}",
-                    file_path_sequence=f"{current_dir}/input_data/RNA_Hairpin.fasta",
-                    modeling_parameter=rosetta_parameter)
+modeling = famp.modeling.Modeling(
+    working_dir=f"{current_dir}",
+    file_path_sequence=f"{current_dir}/input_data/RNA_Hairpin.fasta",
+    modeling_parameter=rosetta_parameter
+)
 ```
 
-The input RNA sequence should be in **fasta** format:
 
+The input FASTA file should contain a single RNA sequence in the following format:
 ```
-> Example_Sequence
+>Example_Sequence
 caauauuuauuaauaucuuccggauauuaauaaauauug
 ```
 
-## 2D Prediction
+---
 
-The `predict_2d_structure()` function is used to perform a secondary structure prediction. This uses RNAfold with standard parameters and 
-predicts the secondary structure. The sequence is automatically read from the fasta file.
-The result is stored in the folder *secondary_prediction* as *dot_bracket.secstruct* 
-file. In this file, the secondary structure can be edited manually afterward. 
+## Secondary Structure Prediction (2D)
+
+The function `predict_2d_structure()` performs secondary structure prediction using **RNAfold**. The RNA sequence is read from the input FASTA file, and the result is stored as a dot-bracket notation file.
+
+- Output directory: `secondary_prediction/`
+- Output file: `dot_bracket.secstruct`
+
+This file can be edited manually after prediction to define or modify secondary structures.
 
 ```python
 modeling.predict_2d_structure()
 ```
-## 3D Prediction
 
-The tertiary structure modeling is done with the Rosetta program and is executed with the `predict_3d_structure`
-function. The sequence and a secondary structure are required as input. These are located in the *dot_bracket.secstruct* 
-file. Parameters for the modeling are defined in a Python dictionary (here). To extract the structure ensemble from the 
-modeling result, the pdb files can be extracted with `extract_pdb()` sorted by the Rosetta score. 
+---
 
+## Tertiary Structure Prediction (3D)
+
+3D structure prediction is performed using Rosetta’s **FARFAR2** module via the `predict_3d_structure()` function. It requires the RNA secondary structure file (from `dot_bracket.secstruct`)
+
+- Output directory: `rosetta_results`
+- Output file: `silent_out.out`
 
 ```python
-modeling.predict_3d_structure(f"{os.getcwd()}/secondary_prediction/dot_bracket.secstruct")
-modeling.extract_pdb(5)
+modeling.predict_3d_structure("dot_bracket.secstruct")
 ```
 
-(content:modeling:parameter)=
-## Modeling Parameter
+---
 
+## Extracting PDB Structures
+
+Once Rosetta modeling is complete, the `extract_pdb()` function is used to convert the generated structure files into PDB format.
+
+- The models are ranked by Rosetta’s "res4" score.
+- The function returns the top `n` structures, where `n` is defined by `number_of_structures`.
+
+```python
+modeling.extract_pdb(number_of_structures=5)
 ```
-rosetta_parameter = {
-    "path_to_rosetta": "rna_denovo.default.macosclangrelease",
-    "nstruct": 5,
-    "minimize_rna": True,
-    "cycles": 200
-}
-```
 
-The parameters for the modeling are a reduced selection of Rosetta flag parameters, which are required for the tertiary structure modeling. 
+The resulting `.pdb` files are stored in the output directory and can be used for subsequent MD simulations or in silico dye labeling.
 
-- *path_to_rosetta* : This parameter refers to the Rosetta modeling module used, which must be specified depending on the operating system A containerized Docker environment should make this parameter obsolete in the future. 
-- *nstruct*: Defines the number of structures to be modeled
-- *minimize_rna*: Optimization of the RNA after assembling the fragments
-- *cycles*: Number of Monte carlo sampling cycles 
+---
+
+
