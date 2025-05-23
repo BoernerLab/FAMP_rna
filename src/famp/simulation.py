@@ -264,14 +264,14 @@ class MDSimulation:
 
         self.copy_files_to_sim_dir()
         self.copy_input_model()
-        self.change_temperature_in_mdp_files(self.md_parameter["temperature[°C]"])
+        self.change_temperature_in_mdp_files(self.md_parameter["temperature[C]"])
         self.change_sim_time_in_md0(self.md_parameter["simulation_time[ns]"])
 
     def update_parameter(self):
         """
         Function to update the parameters simulation time and temperature within the mdp files.
         """
-        self.change_temperature_in_mdp_files(self.md_parameter["temperature[°C]"])
+        self.change_temperature_in_mdp_files(self.md_parameter["temperature[C]"])
         self.change_sim_time_in_md0(self.md_parameter["simulation_time[ns]"])
 
     def solvate_molecule(self) -> None:
@@ -627,7 +627,7 @@ if __name__ == '__main__':
         "simulation_name": "lukas_poly_u_test_2021er_roteded_restraint",
         "c_magnesium_ions[mol/l]": 0.02,
         "simulation_time[ns]": 0.2,
-        "temperature[°C]": 25,
+        "temperature[C]": 25,
         "dist_to_box[nm]": "1",
         "water_model": "tip4p",
         "distance_restraints": True,
