@@ -1,64 +1,112 @@
-# Installation and Requirements 
+# Installation Guide
 
-## Docker
+This page provides instructions to install and run the FAMP pipeline. You can either build the required Docker containers yourself using the provided Dockerfiles, or install FAMP directly using `pip` in a local Python environment (Linux only).
 
-The installation of the pipeline is managed through Docker.
-Docker can be installed on Linux, macOS, and Windows. We provide pre-built Docker images for all these operating systems. For the best experience, we recommend using <a href="https://docs.docker.com/desktop/" target="_blank"> Docker Desktop</a> to run the pipeline. Below are links to installation guides for Docker Desktop:
+---
 
-- <a href="https://docs.docker.com/desktop/install/linux/" target="_blank">Docker Desktop for Linux</a>
-- <a href="https://docs.docker.com/desktop/install/mac-install/" target="_blank">Docker Desktop for macOS</a>
-- <a href="https://docs.docker.com/desktop/install/windows-install/" target="_blank">Docker Desktop for Windows</a>
+## Installation via Docker (recommended)
 
-## Our Docker Images
+FAMP includes Dockerfiles to build containerized environments for modeling, simulation, and data analysis. These Dockerfiles allow reproducible and portable setups across systems, including GPU support for MD simulations.
 
-We provide Docker images specifically tailored for machines equipped with graphics cards (GPUs) to enable the execution of molecular dynamics (MD) simulations.
-
-For users without access to GPU-equipped systems, we offer Data_Analysis images. These images allow the post-processing of MD simulations and FRET simulations on standard desktop machines 
-
-A list of available Docker images and their respective system requirements can be found here.
-
-```{dropdown} Here's my dropdown
-### Analysis
-- Docker 1
-- Docker 2
-- Docker 3
-
-### GPU Support Linux only?
- 
-- Docker 1 for GTX ...
-- Docker 2 for GTX ....
+```{Note}
+We do not publish pre-built Docker images. You must build all containers locally from the provided Dockerfiles.
 ```
 
+### Prerequisites
+- Docker Desktop (recommended for inexperienced users)
+- Docker Engine (alternative for experienced users or server setups)
 
-## Running a docker container with an image
+### Step-by-step instructions
 
-````{tab-set}
-```{tab-item} Docker Desktop
-Wie bekomm ich das Image 
-Wie mach ich nen Run 
-Was begegnet mir 
+1. Install Docker Desktop (if not yet installed)
+   - <a href="https://docs.docker.com/desktop/install/linux/" target="_blank" >Docker Desktop for Linux</a>
+   - <a href="https://docs.docker.com/desktop/install/mac-install/" target="_blank">Docker Desktop for macOS</a>
+   - <a href="https://docs.docker.com/desktop/install/windows-install/" target="_blank">Docker Desktop for Windows</a>
+---
 
-```
+2. Download FAMP and the Docker files
 
-```{tab-item} Docker CLI
-Hier Befehle für Docker CLI einfügen 
-```
-````
-
-## Installation without Docker
-
-Open a terminal and run the following commands:
-
-
-- Clone the repository
+3. Build the container
+   - Start the Docker Desktop application on your system.
+   - In the left sidebar, go to **Images**, then click on `>_ Terminal` to open an integrated terminal.
+   - Use the cd command to move into the folder where the Dockerfile is located. For example:
 ```bash
-git clone https://github.com/felixErichson/FAMP_rna.git
+cd ~/Downloads/FAMP_rna/docker_files
 ```
-- Navigate into the cloned directory
+- Run the following command to build the image. This process may take several minutes, especially on first run:
 ```bash
-cd FAMP_rna
+docker build -t /famp_rna:gpu famp_placeholder
 ```
-- Install the package using pip
+- After the build finishes, you will see the new image famp_rna:gpu listed under the Images section in Docker Desktop.
+
+
+3. Run a container
+
+   - Click on Containers
+   - Use the docker terminal to run: 
 ```bash
-pip install .
+ docker run -p 8888:8888 -v .\:/src/data/ --rm felix/pipeline 
+```
+| Option                | Description                                                                |
+|-----------------------|----------------------------------------------------------------------------|
+| `docker run`          | Starts a new container from a Docker image                                 |
+| `-p 8888:8889`        | Maps port **8888 in the container** to **port 8889 on your host**          |
+| `-v $(pwd):/src/data` | Mounts the **current working directory** into the container at `/src/data` |
+| `--rm`                | Automatically removes the container after it stops                         |
+| `famp_rna:gpu`        | Name of the Docker image you built                                         |
+
+
+4. Access the running container
+If the container starts successfully, a link to a Jupyter Notebook will be displayed in the terminal output.
+You can open this link in your web browser.
+
+Alternatively, if the default settings are used, you can try opening the following link directly in your browser:
+http://localhost:8889/TOKEN
+
+
+
+
+## Installing FAMP without Docker (Linux only)
+
+Bla Bla Bla Dependencies bla bla bal 
+
+### GROMACS
+```bash
+sudo apt update
+sudo apt install gromacs
+```
+Ensure GROMACS is available in your terminal:
+```bash
+gmx --version
+```
+
+If GROMACS was built from source (<a href="https://manual.gromacs.org/documentation/current/install-guide/index.html" target="_blank">installation guide</a>):
+Add the GROMACS binary to your PATH:
+```bash
+echo "source /usr/local/gromacs/bin/GMXRC" >> ~/.bashrc
+source ~/.bashrc
+```
+
+### RNAfold (from ViennaRNA)
+```bash
+sudo apt install vienna-rna
+```
+Test the installation:
+```bash
+RNAfold --version
+```
+
+### Rosetta (requires academic license)
+1. Register and download from: [https://rosettacommons.org/software](https://rosettacommons.org/software)
+2. Unpack and build according to their <a>documentation</a> 
+3. Add the binary to your PATH:
+```bash
+echo "export PATH=/path/to/rosetta/main/source/bin:$PATH" >> ~/.bashrc
+source ~/.bashrc
+```
+
+
+- Install FAMP_rna using pip
+```bash
+pip install famp
 ```
