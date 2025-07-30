@@ -68,7 +68,18 @@ http://localhost:8889/TOKEN
 
 ## Installing FAMP without Docker (Linux only)
 
-Bla Bla Bla Dependencies bla bla bal 
+## Required Dependencies
+
+To use the FAMP pipeline outside of Docker, the following software tools must be **pre-installed** on your system:
+
+- RNAfold (<a href="https://www.tbi.univie.ac.at/RNA/" target="_blank">https://www.tbi.univie.ac.at/RNA/</a>)
+- Rosetta (<a href="https://www.rosettacommons.org/software/license-and-download" target="_blank">https://www.rosettacommons.org/software/license-and-download</a>)
+- GROMACS (<a href="https://www.gromacs.org" target="_blank">https://www.gromacs.org</a>)
+
+These tools are used for RNA structure prediction (2D and 3D) and molecular dynamics simulations.  
+The following sections provide basic installation steps for each dependency on **Linux systems**.  
+For detailed information, please consult the official documentation linked above each section.
+
 
 ### GROMACS
 ```bash
@@ -97,8 +108,8 @@ RNAfold --version
 ```
 
 ### Rosetta (requires academic license)
-1. Register and download from: [https://rosettacommons.org/software](https://rosettacommons.org/software)
-2. Unpack and build according to their <a>documentation</a> 
+1. Register and download from: <a href="https://rosettacommons.org/software/download/" target="_blank">https://rosettacommons.org/software/download/</a>
+2. Unpack and build according to their <a href="https://docs.rosettacommons.org/docs/latest/build_documentation/Build-Documentation" target="_blank">documentation</a> 
 3. Add the binary to your PATH:
 ```bash
 echo "export PATH=/path/to/rosetta/main/source/bin:$PATH" >> ~/.bashrc
