@@ -19,6 +19,7 @@ class Dye:
         self.source_path = pathlib.Path(__file__).parent.resolve()
         self.ff_abbreviation = dye_parameter[0]
         self.attachment_residue = dye_parameter[1]
+        self.attach_chain_id = dye_parameter[2]
         self.dye_name = None
         self.central_c = None
         self.dipole_names = None
@@ -59,17 +60,17 @@ class Dye:
         residue_numbers = pdb_df["residue_number"].unique()
         attechment_atom = ""
         if self.attachment_residue == 1:
-            atom_id = pdb_df[(pdb_df["residue_number"] == str(1)) & (pdb_df["atom_name"] == "O5'")]
+            atom_id = pdb_df[(pdb_df["residue_number"] == str(1)) & (pdb_df["atom_name"] == "O5'") & (pdb_df["chain_id"] == self.attach_chain_id)]
             attechment_atom = "O5'"
         elif self.attachment_residue == int(residue_numbers[-1]):
-            atom_id = pdb_df[(pdb_df["residue_number"] == str(residue_numbers[-1])) & (pdb_df["atom_name"] == "O3'")]
+            atom_id = pdb_df[(pdb_df["residue_number"] == str(residue_numbers[-1])) & (pdb_df["atom_name"] == "O3'") & (pdb_df["chain_id"] == self.attach_chain_id)]
             attechment_atom = "O3'"
         else:
-            atom_id = pdb_df[(pdb_df["residue_number"] == str(self.attachment_residue)) & (pdb_df["atom_name"] == "C5")]
+            atom_id = pdb_df[(pdb_df["residue_number"] == str(self.attachment_residue)) & (pdb_df["atom_name"] == "C5") & (pdb_df["chain_id"] == self.attach_chain_id)]
             attechment_atom = "C5"
 
         atom_id = int(atom_id["atom_id"])
-        print(f"Attechmentpoint for {self.attachment_residue} {self.ff_abbreviation}: {atom_id}, {attechment_atom}")
+        print(f"Attechmentpoint for {self.attachment_residue} {self.ff_abbreviation}: {atom_id}, {attechment_atom}, Chain: {self.attach_chain_id} ")
         return atom_id, attechment_atom
 
     def get_attributes_from_file(self):
@@ -160,18 +161,32 @@ class DataAnalysis:
         :param gro_file: path to gro file
         :param output_file: path to the output file where the (should end with .ndx)
         """
+
         atoms = []
+        rna_residues = [
+            "RU", "RG", "RA", "RC", "C3W", "C5W", "C5K",
+            "RGO", "RUM", "A", "U", "C", "G", "RG5", "RA5", "RC5", "RU5", "RG3", "RA3", "RC3", "RU3",
+            "DT", "DA", "DG", "DC", "DGP", "DC3", "DGK","DG5", "C3N", "DTM", "C3B", "DCI", "DT3", "C5I", "C3P"
+        ]
+        exclude_exact = ["SOL", "MG", "K", "CL"]
+
         with open(gro_file) as f:
-            next(f)
-            next(f)
-            for i, line in enumerate(f):
-                if not any(value in line for value in ("SOL", "MG", "K", "CL")):
-                    atom = line.split()[1]
-                    base = line.split()[0]
-                    if any(string in base for string in
-                        #ToDo: extend for DNA and other dyes or linker pars
-                           ["RU", "RG", "RA", "RC", "C3W", "C5W", "RGO", "RUM", "A", "U", "C", "G"]):
-                        atoms.append(line.split()[2])
+            next(f)  # Überspringe Titel
+            next(f)  # Überspringe Atomanzahl
+            for line in f:
+                if len(line.strip()) < 20:
+                    continue
+
+                residue_name = line[5:10].strip()
+                atom_number = line[15:20].strip()
+
+                if residue_name in exclude_exact:
+                    continue
+
+                if residue_name in rna_residues:
+                    atoms.append(atom_number)
+
+
 
         with open(output_file, 'w') as the_file:
             the_file.write('[RNA]\n')
@@ -202,6 +217,7 @@ class DataAnalysis:
 
     @staticmethod
     def make_ndx_of_rna_without_dyes(gro_file: str, output_file: str):
+        # TODO: Extend for 3 and 5 prime residues
         """RNA extractor
 
         This function extracts atom id's belonging to an RNA Molecule and not to dyes and writes an .ndx file
@@ -328,7 +344,7 @@ class DataAnalysis:
     # ---------------------Preparing Files for MD Analysis procedure----------------------------------------------------
 
     def parameter_result_file_checker(self):
-        dye_list = ["C3W", "C5W", "C7N", "C55", "C75", "A35", "A48", "A53", "A56", "A59", "A64", "T39", "T42", "T46",
+        dye_list = ["C3P", "C5I", "C3W", "C5W", "C7N", "C55", "C75", "A35", "A48", "A53", "A56", "A59", "A64", "T39", "T42", "T46",
                     "T48", "T49", "T51", "T52", "T61"]
 
         par_acceptor = self.analysis_parameter['Acceptor_residue_name_number']
@@ -721,8 +737,8 @@ if __name__ == '__main__':
     analysis_paras = {
         "simulation_name": "lukas_poly_u_test_2021er_roteded_restraint",
         "input_structure_name": "lukas_polyu_rotated",
-        "Donor_residue_name_number": ("C3W", 10),
-        "Acceptor_residue_name_number": ("C5W", 45),
+        "Donor_residue_name_number": ["C3W", 10, "A"],
+        "Acceptor_residue_name_number": ["C5W", 45, "B"],
     }
 
     dye_acv_parameter = {
