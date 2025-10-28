@@ -60,7 +60,7 @@ docker build -t famp_rna:cpu -f <Dockerfile_name> .
 ```
 - After the build finishes, you will see the new image famp_rna:cpu listed under the Images section in Docker Desktop.
 
-4. Run a container
+5. Run a container
 
    - Click on Containers
    - Use the docker terminal to run: 
@@ -80,7 +80,7 @@ docker build -t famp_rna:cpu -f <Dockerfile_name> .
 If you have built a container with GPU support, remember to include the Docker GPU flag when running it: --gpus=all
 ```
 
-5. Access the running container
+6. Access the running container
 If the container starts successfully, a link to a Jupyter Notebook will be displayed in the terminal output.
 You can open this link in your web browser.
 
