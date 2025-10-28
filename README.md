@@ -1,7 +1,7 @@
 <img src="docs/Images/Github_readme.png" height="125"/>
 
 
-# The Project
+### The Project
 
 This project combines different tools for modeling and simulation of RNA structures. 
 Furthermore, functionalities were developed to efficiently analyze MD trajectories of 
