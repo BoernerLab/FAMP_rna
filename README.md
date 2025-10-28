@@ -11,19 +11,15 @@ smFRET experimental data.
 
 ## Installation
 
-You can set up **FAMP** in three different ways, depending on how much control you want over the environment:
+You can set up **FAMP** in two different ways, depending on how much control you want over the environment:
 
 1. **Manual installation**  
    - Maximum freedom to choose your own versions of ViennaRNA, Rosetta, GROMACS and other tools/drivers.  
-   - ⚠️ Be aware: leaving out certain dependencies may limit functionality.  
+   - Be aware: leaving out certain dependencies may limit functionality.  
 
-2. **Use our prebuilt Docker image**  
-   - Easiest option: everything is already configured.  
-   - ⚠️ You are locked into our bundled CUDA and library versions, which may not be compatible with your system.  
-
-3. **Build your own Docker image from our Dockerfile with small adjustments**  
-   - Recommended if you want to adjust CUDA and drivers.  
-   - Requires rebuilding the Docker Container, but keeps setup reproducible.  
+2. **Build your own Docker image from our Dockerfile instructions**  
+   - Requires to adjust CUDA and additional tools/drivers.  
+   - Requires building the Docker Container, but keeps setup reproducible.  
 
 ---
 
