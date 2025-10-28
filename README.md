@@ -1,7 +1,7 @@
 <img src="docs/Images/Github_readme.png" height="125"/>
 
 
-### The Project
+# The Project
 
 This project combines different tools for modeling and simulation of RNA structures. 
 Furthermore, functionalities were developed to efficiently analyze MD trajectories of 
@@ -11,10 +11,30 @@ smFRET experimental data.
 
 ## Installation
 
-The code can be downloaded under the green button "Code" or cloned via the terminal:
+You can set up **FAMP** in three different ways, depending on how much control you want over the environment:
+
+1. **Manual installation**  
+   - Maximum freedom to choose your own versions of ViennaRNA, Rosetta, GROMACS and other tools/drivers.  
+   - ⚠️ Be aware: leaving out certain dependencies may limit functionality.  
+
+2. **Use our prebuilt Docker image**  
+   - Easiest option: everything is already configured.  
+   - ⚠️ You are locked into our bundled CUDA and library versions, which may not be compatible with your system.  
+
+3. **Build your own Docker image from our Dockerfile with small adjustments**  
+   - Recommended if you want to adjust CUDA and drivers.  
+   - Requires rebuilding the Docker Container, but keeps setup reproducible.  
+
+---
+
+### 📥 Get the source code
+
+You can download the source via the green **“Code”** button above or clone it directly from the terminal:
+
+```bash
+git clone https://github.com/BoernerLab/FAMP_rna.git
 ```
-git clone https://github.com/felixErichson/FAMP_rna.git
-```
+cd FAMP_rna
 <br>
 
 ### Requirements
