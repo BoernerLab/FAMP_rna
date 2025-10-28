@@ -17,21 +17,18 @@ You can set up **FAMP** in two different ways, depending on how much control you
    - Maximum freedom to choose your own versions of ViennaRNA, Rosetta, GROMACS and other tools/drivers.  
    - Be aware: leaving out certain dependencies may limit functionality.  
 
-2. **Build your own Docker image from our Dockerfile instructions**  
-   - Requires to adjust CUDA and additional tools/drivers.  
+2. **Build your own Docker image from our Dockerfile instructions with and without GPU support**
    - Requires building the Docker Container, but keeps setup reproducible.  
 
 ---
 
-### 📥 Get the source code
+### Get the source code
 
 You can download the source via the green **“Code”** button above or clone it directly from the terminal:
 
 ```bash
 git clone https://github.com/BoernerLab/FAMP_rna.git
 ```
-cd FAMP_rna
-<br>
 
 ### Requirements
 As a dependency of this notebook the following programms should be preinstalled. Please follow the installation instructions of the tools.
