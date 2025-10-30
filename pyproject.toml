@@ -8,7 +8,6 @@ version = "0.0.3"
 description = "FAMP - FRET assisted modeling Pipeline for RNA structures"
 authors = [
     { name = "Felix Erichson", email = "erichson@hs-mittweida.de" },
-    { name = "Fabio Steffen", email = "fabio.steffen@chem.uzh.ch" },
     { name = "Richard Börner", email = "richard.boerner@hs-mittweida.de"}
 ]
 maintainers = [
