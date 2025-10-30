@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "famp"
-version = "0.0.1"
+version = "0.0.2"
 description = "FAMP - FRET assisted modeling Pipeline for RNA structures"
 authors = [
     { name = "Felix Erichson", email = "erichson@hs-mittweida.de" },
