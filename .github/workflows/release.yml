@@ -105,7 +105,7 @@ jobs:
     needs: [setup_and_build, details]
     runs-on: ubuntu-latest
     environment:
-      name: release
+      name: pypi
     permissions:
       id-token: write
     steps:
@@ -148,7 +148,7 @@ jobs:
     needs: [details, github_release, pypi_publish]
     runs-on: ubuntu-latest
     environment:
-      name: release
+      name: pypi
     steps:
       - name: Dispatch Repository Dispatch event
         uses: peter-evans/repository-dispatch@v2
