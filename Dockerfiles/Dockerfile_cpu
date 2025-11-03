@@ -2,8 +2,8 @@ FROM ubuntu:22.04
 
 LABEL maintainer="Felix Erichson, M.Sc. <erichson@hs-mittweida.de>"
 ENV DEBIAN_FRONTEND=noninteractive
-ENV GROMACS=gromacs-2025.1.tar.gz
-ENV ROSETTA=rosetta.source.release-362.tar.bz2
+ENV GROMACS=gromacs-2025.3.tar.gz
+ENV ROSETTA=rosetta_source_3.15_bundle.tar.bz2
 ENV PIPELINE=FAMP_rna-main
 
 RUN apt-get update && \
@@ -15,16 +15,15 @@ RUN python3 -m famp_rna /opt/famp_rna
 WORKDIR /src
 ADD $GROMACS .
 ADD $ROSETTA .
-ADD $PIPELINE .
 
-RUN cd FAMP_rna-development && /opt/famp_rna/bin/pip install -e .
+RUN pip install famp
 
 RUN cd rosetta*/main/source \
     # && echo -n "#include <cstdint>" | cat - src/protocols/features/FeaturesReporter.fwd.hh > /tmp/updated_file.tmp \ ## if you want to use rosetta 3.13 with a newer gcc release than June2021
     # && mv /tmp/updated_file.tmp src/protocols/features/FeaturesReporter.fwd.hh \                                     ## same as comment above
     && ./scons.py -j4 mode=release bin
 
-RUN cd gromacs-2025.1 \
+RUN cd gromacs-2025.3 \
     && mkdir build \
     && cd build \
     && cmake .. -DGMX_BUILD_OWN_FFTW=ON \
@@ -35,6 +34,6 @@ RUN cd gromacs-2025.1 \
 RUN chmod +x /usr/local/gromacs/bin/GMXRC
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/gromacs/bin:/opt/famp_rna/bin:$PATH
 
-EXPOSE 8888
+EXPOSE 8889
 
-CMD ["jupyter-lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
+CMD ["jupyter-lab", "--ip=0.0.0.0", "--port=8889", "--no-browser", "--allow-root"]
