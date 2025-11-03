@@ -18,13 +18,12 @@ ADD $ROSETTA .
 
 RUN pip install famp
 
-
 RUN cd rosetta*/main/source \
     # && echo -n "#include <cstdint>" | cat - src/protocols/features/FeaturesReporter.fwd.hh > /tmp/updated_file.tmp \ ## if you want to use rosetta 3.13 with a newer gcc release than June2021
     # && mv /tmp/updated_file.tmp src/protocols/features/FeaturesReporter.fwd.hh \                                     ## same as comment above
     && ./scons.py -j4 mode=release bin
 
-RUN cd gromacs-2025.1 \
+RUN cd gromacs-2025.3 \
     && mkdir build \
     && cd build \
     && cmake .. -DGMX_GPU=CUDA -DGMX_BUILD_OWN_FFTW=ON \

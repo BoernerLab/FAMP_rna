@@ -37,6 +37,7 @@ ENV GROMACS=<Path/to/gromacs.tar.gz>
 ENV ROSETTA=<Path/to/rosetta.tar.bz2>
 ENV PIPELINE=<Path/to/FAMP_rna-main>
 ```
+Change also the GROMACS Version in the Dockerfile at line 26.
 
 For GPU support, make sure to select the appropriate image name on Docker Hub that matches your CUDA version, and update the first line of the Dockerfile accordingly.
 
@@ -65,16 +66,16 @@ docker build -t famp_rna:cpu -f <Dockerfile_name> .
    - Click on Containers
    - Use the docker terminal to run: 
 ```bash
- docker run -p 8888:8888 -v .\:/src/data/ --rm famp_rna:cpu 
+ docker run -p 8888:8889 -v .\:/src/data/ --rm famp_rna:cpu 
 ```
-| Option                | Description                                                                |
-|-----------------------|----------------------------------------------------------------------------|
-| `docker run`          | Starts a new container from a Docker image                                 |
-| `-p 8888:8889`        | Maps port **8888 in the container** to **port 8889 on your host**          |
-| `-v $(pwd):/src/data` | Mounts the **current working directory** into the container at `/src/data` |
-| `--rm`                | Automatically removes the container after it stops                         |
-| `--gpus=all`          | adds all available GPUs registered to the system to the Container          |
-| `famp_rna:cpu`        | Name of the Docker image you built                                         |
+| Option            | Description                                                                |
+|-------------------|----------------------------------------------------------------------------|
+| `docker run`      | Starts a new container from a Docker image                                 |
+| `-p 8888:8889`    | Maps port **8888 in the container** to **port 8889 on your host**          |
+| `-v .\:/src/data` | Mounts the **current working directory** into the container at `/src/data` |
+| `--rm`            | Automatically removes the container after it stops                         |
+| `--gpus=all`      | adds all available GPUs registered to the system to the Container          |
+| `famp_rna:cpu`    | Name of the Docker image you built                                         |
 
 ```{Note}
 If you have built a container with GPU support, remember to include the Docker GPU flag when running it: --gpus=all
@@ -114,7 +115,7 @@ docker build -t famp_rna:cpu -f <Path/to/Dockerfile_name> .
 4. Run your container in your Terminal
 
 ```bash
- docker run -p 8888:8888 -v .\:/src/data/ --rm famp_rna:cpu 
+ docker run -p 8888:8889 -v .\:/src/data/ --rm famp_rna:cpu 
 ```
 
 ---
