@@ -15,7 +15,7 @@ from famp.pdb_cleaner import *
 
 
 class Dye:
-    def __init__(self, dye_parameter: tuple) -> None:
+    def __init__(self, dye_parameter) -> None:
         self.source_path = pathlib.Path(__file__).parent.resolve()
         self.ff_abbreviation = dye_parameter[0]
         self.attachment_residue = dye_parameter[1]
@@ -166,7 +166,7 @@ class DataAnalysis:
         rna_residues = [
             "RU", "RG", "RA", "RC", "C3W", "C5W", "C5K",
             "RGO", "RUM", "A", "U", "C", "G", "RG5", "RA5", "RC5", "RU5", "RG3", "RA3", "RC3", "RU3",
-            "DT", "DA", "DG", "DC", "DGP", "DC3", "DGK","DG5", "C3N", "DTM", "C3B", "DCI", "DT3", "C5I", "C3P"
+            "DT", "DA", "DG", "DC", "DGP", "DC3", "DGK","DG5", "C3N", "DTM", "C3B", "DCI", "DT3", "C5I", "C3P","C3E"
         ]
         exclude_exact = ["SOL", "MG", "K", "CL"]
 
@@ -345,7 +345,7 @@ class DataAnalysis:
 
     def parameter_result_file_checker(self):
         dye_list = ["C3P", "C5I", "C3W", "C5W", "C7N", "C55", "C75", "A35", "A48", "A53", "A56", "A59", "A64", "T39", "T42", "T46",
-                    "T48", "T49", "T51", "T52", "T61"]
+                    "T48", "T49", "T51", "T52", "T61", "C3E"]
 
         par_acceptor = self.analysis_parameter['Acceptor_residue_name_number']
         par_donor = self.analysis_parameter['Donor_residue_name_number']
@@ -487,7 +487,7 @@ class DataAnalysis:
         Function to prepare a directory for the MD data analysis.
 
         A new folder MD_analysis will be created. The xtc file of the MD run is reduced to RNA and a pdb file of the
-        first state from the trajectory ist created. The pdb, xtc, gro and tpr file will be copied to the analysis
+        first state from the trajectory is created. The pdb, xtc, gro and tpr file will be copied to the analysis
         directory.
 
         """
@@ -735,8 +735,8 @@ class DataAnalysis:
 
 if __name__ == '__main__':
     analysis_paras = {
-        "simulation_name": "lukas_poly_u_test_2021er_roteded_restraint",
-        "input_structure_name": "lukas_polyu_rotated",
+        "simulation_name": "U_KLTL_1_new",
+        "input_structure_name": "U_KLTL_1_new",
         "Donor_residue_name_number": ["C3W", 10, "A"],
         "Acceptor_residue_name_number": ["C5W", 45, "B"],
     }
@@ -749,7 +749,7 @@ if __name__ == '__main__':
             "dye_radius1": 9.5,
             "dye_radius2": 3,
             "dye_radius3": 1.5,
-            "cv_fraction": 0.99,
+            "cv_fraction": 0.18,
             "cv_thickness": 3
         },
         "Donor": {
@@ -759,7 +759,7 @@ if __name__ == '__main__':
             "dye_radius1": 8.0,
             "dye_radius2": 3,
             "dye_radius3": 1.5,
-            "cv_fraction": 0.99,
+            "cv_fraction": 0.04,
             "cv_thickness": 3,
         },
         "Distance": {"sCy3-sCy5":
@@ -771,20 +771,20 @@ if __name__ == '__main__':
 
     print(os.getcwd())
 
-    md_analysis = DataAnalysis(working_dir="/home/felix/Documents/md_lukas_test_2021er",
-                               path_sim_results="/home/felix/Documents/md_lukas_test_2021er/lukas_poly_u_test_2021er_roteded_restraint",
+    md_analysis = DataAnalysis(working_dir="/home/felix/Documents/U_KLTL_1_new",
+                               path_sim_results="/home/felix/Documents/U_KLTL_1_new",
                                analysis_parameter=analysis_paras, macv_label_pars=dye_acv_parameter)
 
     # 1. get all files ready in new analysis folder
     md_analysis.make_data_analysis_results_dirs()
-    md_analysis.export_pdb_trajectory(5)
+    md_analysis.export_pdb_trajectory(10000)
     # 2. calculate r_kappa from explicit dyes
-    #md_analysis.generate_r_kappa_from_dyes()
+    md_analysis.generate_r_kappa_from_dyes()
     # 3. calculate r_kappa from macv
     #md_analysis.make_dir(f"{md_analysis.analysis_dir}/macv")
     #md_analysis.remove_dyes_from_trajectory()
     #md_analysis.rewrite_atoms_after_unlabeling()
-    #md_analysis.genarate_rkappa_file_from_macv()
+    md_analysis.genarate_rkappa_file_from_macv()
     # dye = Dye(("C3W", 63))
     # pdb = dye.get_attechment_id_from_pdb(f"/home/felix/Documents/md_pipeline_testfolder/m_tlr_ub/analysis/raw/m_tlr_ub_1_s1.pdb")
     # print(pdb)

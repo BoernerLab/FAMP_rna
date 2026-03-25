@@ -3,6 +3,9 @@ import re
 import os
 import shutil
 import pathlib
+import numpy as np
+import mdtraj as md
+import fretraj as ft
 from famp.exceptions import GromacsMdrunError, GromacsEditconfError, GromacsGenionError, GromacsGromppError, \
     GromacsSolvateError, GromacsPdb2gmxError
 
@@ -15,6 +18,7 @@ class MDSimulation:
         self.md_parameter = md_parameter
         self.path_simulation_folder = self.get_simulation_path()
         self.input_structure_name = self.get_input_structure_name()
+        self.temp_pseudo_restraint_data = []
         self.restraints = []
 
     @staticmethod
@@ -173,6 +177,218 @@ class MDSimulation:
         structure_name = file_name[:-4]
         return structure_name
 
+    #______________ Pseudoatom Section__________________________________________________________________________________
+
+    def prepare_structure_with_pseudoatoms(self, acv_parameter_file: str):
+        """
+        Calculates ACVs based on labels, adds Pseudo-Atoms (PS) to the structure,
+        and saves a new PDB. It also stores restraint data for later remapping.
+
+        :param acv_parameter_file: Path to the JSON file containing label definitions.
+        """
+        print("--- Preparing Pseudo Atoms ---")
+
+        labels = ft.cloud.labeling_params(acv_parameter_file, verbose=False)
+
+        structure = md.load(self.file_path_input)
+
+        volumes = []
+        if 'Position' in labels:
+            for dye_name in labels['Position'].keys():
+                print(f"Calculating Volume for {dye_name}...")
+                vol = ft.cloud.Volume(structure, dye_name, labels)
+                volumes.append(vol)
+
+        if not volumes:
+            print("No label positions found in JSON.")
+            return
+
+        new_xyz = structure.xyz.copy()
+        top = structure.top
+
+        # get last chain
+        last_chain = top.chain(top.n_chains - 1)
+        last_residue = last_chain.residue(last_chain.n_residues - 1)
+        current_resSeq = last_residue.resSeq + 1
+
+        self.temp_pseudo_restraint_data = []  # Reset data
+
+        for volume in volumes:
+            # add new residue in pdb
+            res = top.add_residue("PS", last_chain, resSeq=current_resSeq)
+            current_resSeq += 1
+
+            # add new atom in pdb
+            top.add_atom("PS", md.element.bromine, res)
+
+            # calcaulate pseudo atom coords
+            pseudo_pos = np.array(volume.acv.mp, dtype=float) / 10.0
+
+            if pseudo_pos.shape != (3,):
+                raise ValueError(f"Pseudoatom position shape error: {pseudo_pos.shape}")
+
+            new_xyz = np.concatenate([new_xyz, pseudo_pos.reshape(1, 1, 3)], axis=1)
+
+            # Restraints berechnen (Geometrie vor pdb2gmx)
+            res_data = self.calculate_distance_restraints_geometry(volume)
+            self.temp_pseudo_restraint_data.append(res_data)
+
+        # 5. save new structure
+        new_filename = "pseudo_atoms_added.pdb"
+        new_path = os.path.join(self.working_dir, new_filename)
+
+        new_structure = md.Trajectory(new_xyz, top)
+        new_structure.save_pdb(new_path)
+
+        print(f"New structure with pseudo atoms saved to: {new_path}")
+
+        # 6. Update Input File Path
+        self.file_path_input = new_path
+        self.input_structure_name = "pseudo_atoms_added"
+
+    def calculate_distance_restraints_geometry(self, volume, selection="name P", cutoff=15):
+        """Internal helper to calculate distances and mapping info."""
+        current_structure = volume.structure
+        top = current_structure.top
+        attach_id_mdtraj = volume.attach_id - 1
+
+        # calculate neighbor atoms
+        neighbor_idx = md.compute_neighbors(current_structure, cutoff / 10, [attach_id_mdtraj])[0]
+        atomsele_idx = top.select(selection)
+        atoms_idx = np.array([idx for idx in neighbor_idx if idx in atomsele_idx])
+
+        if len(atoms_idx) != 0:
+            mapping_info = []
+            for idx in atoms_idx:
+                atom = top.atom(idx)
+                mapping_info.append({
+                    "resSeq": atom.residue.resSeq,
+                    "resName": atom.residue.name,
+                    "name": atom.name
+                })
+
+            atoms_xyz = current_structure.xyz[0, atoms_idx, :] * 10  # nm to Angstrom calc logic from notebook
+            mp_angstrom = volume.acv.mp
+
+            # Distance in nm
+            distances = np.sqrt(np.sum((mp_angstrom - atoms_xyz) ** 2, axis=1)) / 10
+
+            return {
+                "attach_atoms": {
+                    "xyz": current_structure.xyz[0, atoms_idx, :],
+                    "mapping": mapping_info
+                },
+                "distances": distances,
+            }
+        else:
+            print("No selected atom types within cutoff for restraints.")
+            return None
+
+    def create_pseudo_restraints(self, gro_file_path: str, itp_filename="distance_restraints.itp"):
+        """
+        Called after pdb2gmx. Maps original atoms to new GROMACS indices,
+        identifies pseudo atoms, and writes the .itp file.
+        """
+        if not self.temp_pseudo_restraint_data:
+            print("No pseudo atom restraint data found. Skipping .itp generation.")
+            return
+
+        print(f"Mapping restraints to {gro_file_path}...")
+
+        traj_gro = md.load(gro_file_path)
+        top_gro = traj_gro.top
+
+        # 1. create lookup table
+        lookup_map = {}
+        for atom in top_gro.atoms:
+            key = (atom.residue.resSeq, atom.name)
+            lookup_map[key] = atom.index + 1  # GROMACS is 1-based
+
+        # 2. find pseudo atoms (PS)
+        ps_indices = top_gro.select("resname PS")
+        if len(ps_indices) == 0:
+            print("Warning: No residues named 'PS' found in .gro file.")
+            return
+
+        pseudo_atom_ids_gro = [idx + 1 for idx in ps_indices]
+
+        # 3. remap data
+        remapped_restraints = []
+        for group in self.temp_pseudo_restraint_data:
+            if group is None: continue
+
+            new_group = group.copy()
+            new_serials = []
+
+            for atom_info in group['attach_atoms']['mapping']:
+                key = (atom_info['resSeq'], atom_info['name'])
+                if key in lookup_map:
+                    new_serials.append(lookup_map[key])
+                else:
+                    raise ValueError(f"Atom {atom_info} not found in {gro_file_path} after pdb2gmx.")
+
+            new_group['attach_atoms']['serial'] = np.array(new_serials)
+            remapped_restraints.append(new_group)
+
+        # 4. write .itp file
+        itp_path = os.path.join(self.path_simulation_folder, "em", itp_filename)  # Save in em folder first
+
+        margin = 0.3  # nm deviation
+        content = [
+            "; GROMACS distance restraints for pseudo atoms",
+            "[ distance_restraints ]",
+            ";  ai    aj   type   index   type'      low     up1     up2     fac"
+        ]
+
+        counter = 0
+        for group_data, p_id in zip(remapped_restraints, pseudo_atom_ids_gro):
+            atom_id_1 = int(p_id)
+            attached = group_data['attach_atoms']['serial']
+            dists = group_data['distances']
+
+            for atom_id_2, d_val_np in zip(attached, dists):
+                d_val = float(d_val_np)
+                lower = max(0.0, d_val - margin)
+                upper = d_val + margin
+
+                line = f"{atom_id_1:6d} {int(atom_id_2):6d} 1 {counter:4d} 1 {lower:.4f} {d_val:.4f} {upper:.4f} 1.0"
+                content.append(line)
+                counter += 1
+
+        with open(itp_path, "w") as f:
+            f.write("\n".join(content) + "\n")
+
+        print(f"Generated {itp_filename} with {counter} restraints.")
+
+        # 5. In Topology einbinden
+        top_file = os.path.join(self.path_simulation_folder, f"{self.input_structure_name}.top")
+        self._include_itp_in_top(top_file, itp_filename)
+
+    def _include_itp_in_top(self, top_file, itp_file):
+        """Injects #include statement into topol.top"""
+        with open(top_file, 'r') as f:
+            lines = f.readlines()
+
+        include_line = f'#include "{itp_file}"\n'
+        if any(include_line.strip() in l for l in lines):
+            return
+
+            # Insert before [ molecules ] or after forcefield includes
+        # Strategy: Find [ molecules ] and insert before
+        insert_idx = -1
+        for i, line in enumerate(lines):
+            if "[ molecules ]" in line:
+                insert_idx = i
+                break
+
+        if insert_idx != -1:
+            lines.insert(insert_idx, f"\n{include_line}\n")
+            with open(top_file, 'w') as f:
+                f.writelines(lines)
+            print(f"Included {itp_file} in topology.")
+
+    #___________________________________________________________________________________________________________________
+
     def change_temperature_in_mdp_files(self, temperature: int):
         """Changes the tempreature in the mdp files
 
@@ -307,6 +523,10 @@ class MDSimulation:
             f"-ignh "
             f"-ff amber14sb_OL15 "
             f"-water {self.md_parameter['water_model']}")
+
+        gro_file = f"{self.path_simulation_folder}/em/{self.input_structure_name}.gro"
+        if self.temp_pseudo_restraint_data:
+            self.create_pseudo_restraints(gro_file, itp_filename="distance_restraints.itp")
 
         self.run_gromacs_command(
             f"gmx editconf "

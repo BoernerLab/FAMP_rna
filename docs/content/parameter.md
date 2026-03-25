@@ -12,7 +12,8 @@ rosetta_parameter = {
     "nstruct": 50,
     "fasta": "rna_tlr_sequence.fasta",
     "minimize_rna": True,
-    "cycles": 200
+    "cycles": 200,
+    "overwrite": True
 }
 ```
 
@@ -22,6 +23,7 @@ rosetta_parameter = {
 - `fasta`: Path to the input RNA sequence in FASTA format.
 - `minimize_rna`: Whether to perform structure minimization after generation.
 - `cycles`: Number of Monte Carlo sampling cycles used in FARFAR2 modeling.
+- `overwrite`: Overwrites current modeling results if set to True.
 
 ---
 
@@ -56,8 +58,8 @@ simulation_parameter = {
 analysis_paras = {
         "simulation_name": "KL_TL",
         "input_structure_name": "KL_TL_input",
-        "Donor_residue_name_number": ("C3W", 10),
-        "Acceptor_residue_name_number": ("C5W", 45),
+        "Donor_residue_name_number": ("C3W", 10,"A"),
+        "Acceptor_residue_name_number": ("C5W", 45,"A"),
     }
 ```
 
@@ -65,7 +67,7 @@ analysis_paras = {
 - `simulation_name`: Must match the MD run identifier.
 - `input_structure_name`: File name of the RNA structure used for the MD run.
 - `Donor_residue_name_number`: Tuple (residue name, number) of donor dye attachment site.
-- `Acceptor_residue_name_number`: Tuple (residue name, number) of acceptor dye attachment site.
+- `Acceptor_residue_name_number`: Tuple (residue name, residue number, chain ID) of acceptor dye attachment site.
 
 ---
 
